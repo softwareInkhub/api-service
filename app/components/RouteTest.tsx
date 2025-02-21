@@ -8,6 +8,42 @@ interface RouteTestProps {
   route: RouteConfig;
 }
 
+const routes = [
+  {
+    name: 'getAllClients',
+    method: 'GET',
+    path: '/api/client/getAllClients',
+    description: 'Get all clients'
+  },
+  {
+    name: 'getClientById',
+    method: 'GET',
+    path: '/api/client/getClientById',
+    description: 'Get client by ID'
+  },
+  {
+    name: 'updateClientById',
+    method: 'PUT',
+    path: '/api/client/updateClient',
+    description: 'Update client'
+  },
+  {
+    name: 'deleteClientById',
+    method: 'DELETE',
+    path: '/api/client/deleteClient',
+    description: 'Delete client'
+  },
+  {
+    name: 'createClient',
+    method: 'POST',
+    path: '/api/client/createClient',
+    description: 'Create a new client',
+    body: {
+      clientName: 'Test Client'
+    }
+  },
+];
+
 export default function RouteTest({ route }: RouteTestProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -59,9 +95,13 @@ export default function RouteTest({ route }: RouteTestProps) {
     setLoading(true);
     try {
       let url = route.path;
-      Object.entries(pathParams).forEach(([key, value]) => {
-        url = url.replace(`{${key}}`, value);
-      });
+      
+      // For getClientById, updateClient, and deleteClient, convert path param to query param
+      if (route.path.includes('{id}')) {
+        const baseUrl = route.path.split('/{id}')[0];
+        url = `${baseUrl}?id=${pathParams.id}`;
+      }
+
       url = `${process.env.NEXT_PUBLIC_API_URL}${url}`;
 
       let body: RequestBody = {};
@@ -105,13 +145,56 @@ export default function RouteTest({ route }: RouteTestProps) {
         data,
       });
     } catch (error) {
-      // Log error details
       console.error('Error:', error);
       setResponse({
         status: 500,
         data: null,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestRoute = async (route: string) => {
+    setLoading(true);
+    try {
+      let response: Response | undefined;
+      
+      switch (route) {
+        case 'getAllClients':
+          response = await fetch('/api/client/getAllClients');
+          break;
+          
+        case 'getClientById':
+          response = await fetch('/api/client/getClientById');
+          break;
+          
+        case 'createClient':
+          response = await fetch('/api/client/createClient', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              clientName: 'Test Client'
+            }),
+          });
+          break;
+          
+        default:
+          throw new Error('Invalid route');
+      }
+
+      if (!response) {
+        throw new Error('No response received');
+      }
+
+      const data = await response.json();
+      setResponse(data);
+    } catch (error) {
+      console.error('Error testing route:', error);
+      setResponse({ status: 500, data: null, error: 'Failed to test route' });
     } finally {
       setLoading(false);
     }

@@ -22,13 +22,13 @@ export const routes: RouteConfig[] = [
   },
   {
     method: 'PUT',
-    path: '/api/clients/updateClient/{id}',
+    path: '/api/clients/updateClientById/{id}',
     description: 'Update client',
     group: 'clients'
   },
   {
     method: 'DELETE',
-    path: '/api/clients/deleteClient/{id}',
+    path: '/api/clients/deleteClientById/{id}',
     description: 'Delete client',
     group: 'clients'
   }
