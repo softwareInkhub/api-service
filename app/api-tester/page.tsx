@@ -8,6 +8,8 @@ import { namespaceService } from '../services/namespaceService';
 import { Namespace, NamespaceAccount } from '../types/namespace';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { SchemaEditor } from '../components/schema-editor/SchemaEditor';
+import { saveSchema } from '../services/jsonSchemaService';
 
 // Create a type for the component props
 interface JsonEditorProps {
@@ -326,6 +328,39 @@ export default function ApiTester() {
           console.log('[Sample] Successfully saved sample data');
         } catch (error) {
           console.error('[Sample] Error saving sample data:', error);
+        }
+      }
+
+      // Inside handleSend function, where we save the schemas
+      if (selectedMethod['method-id']) {
+        try {
+          const methodRef = doc(db, 'namespace-account-method', selectedMethod['method-id']);
+          
+          // Save both request and response schemas to the method document
+          await updateDoc(methodRef, {
+            'request-schema': {
+              type: 'object',
+              properties: {
+                method: { type: 'string' },
+                endpoint: { type: 'string' },
+                headers: { type: 'object' },
+                body: requestBody ? 
+                  (typeof requestBody === 'string' ? JSON.parse(requestBody) : requestBody) : 
+                  { type: 'object' }
+              }
+            },
+            'response-schema': {
+              type: 'object',
+              properties: {
+                status: { type: 'number' },
+                data: responseData ? inferSchema(responseData) : { type: 'object' }
+              }
+            }
+          });
+
+          console.log('[Schema] Saved request and response schemas for method:', selectedMethod['method-id']);
+        } catch (error) {
+          console.error('[Schema] Error saving schemas:', error);
         }
       }
 
@@ -708,6 +743,29 @@ export default function ApiTester() {
     ]);
     setAccounts(accountsData);
     setMethods(methodsData);
+  };
+
+  // Helper function to infer schema from data
+  const inferSchema = (data: any): any => {
+    if (Array.isArray(data)) {
+      return {
+        type: 'array',
+        items: data.length > 0 ? inferSchema(data[0]) : { type: 'object' }
+      };
+    }
+    
+    if (typeof data === 'object' && data !== null) {
+      const properties: any = {};
+      Object.entries(data).forEach(([key, value]) => {
+        properties[key] = inferSchema(value);
+      });
+      return {
+        type: 'object',
+        properties
+      };
+    }
+
+    return { type: typeof data };
   };
 
   return (

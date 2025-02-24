@@ -1,10 +1,13 @@
-import { useState } from 'react';
-import { FiX, FiSend, FiCopy, FiCheck } from 'react-icons/fi';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { FiX, FiSend, FiCopy, FiCheck, FiDownload } from 'react-icons/fi';
 import { Namespace, NamespaceAccount, NamespaceMethod, KeyValuePair } from '../../types/namespace';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import JsonTreeView from '../JsonTreeView';
 import { JsonSchemaService } from '../../services/jsonSchemaService';
+import { RequestSchemaDialog } from '../request-schema-dialog/RequestSchemaDialog';
 
 interface ApiResponse {
   status: number;
@@ -23,19 +26,21 @@ interface ApiTestDialogProps {
 }
 
 type RequestTab = 'params' | 'headers' | 'body';
-type ResponseTab = 'body' | 'headers';
+type ResponseTab = 'body' | 'schema';
 
-export default function ApiTestDialog({ 
-  isOpen, 
-  onClose, 
-  method, 
-  namespace, 
+const ApiTestDialog: React.FC<ApiTestDialogProps> = ({
+  isOpen,
+  onClose,
+  method,
+  namespace,
   accounts,
-  initialAccount 
-}: ApiTestDialogProps) {
+  initialAccount
+}) => {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
-  const [requestBody, setRequestBody] = useState(method['sample-request'] || {});
+  const [requestBody, setRequestBody] = useState<string>(
+    JSON.stringify(method['sample-request'] || {}, null, 2)
+  );
   const [queryParams, setQueryParams] = useState<KeyValuePair[]>(
     method['namespace-account-method-queryParams'] || [{ key: '', value: '' }]
   );
@@ -50,6 +55,66 @@ export default function ApiTestDialog({
   const [selectedAccount, setSelectedAccount] = useState<NamespaceAccount>(
     initialAccount || accounts[0]
   );
+  const [validationInput, setValidationInput] = useState('');
+  const [validationResult, setValidationResult] = useState<string[]>([]);
+  const [responseBodyTab, setResponseBodyTab] = useState<'body' | 'headers'>('body');
+  const [showSchemaDialog, setShowSchemaDialog] = useState(false);
+
+  useEffect(() => {
+    if (!validationInput) {
+      setValidationResult([]);
+      return;
+    }
+
+    try {
+      const jsonData = JSON.parse(validationInput);
+      const schema = method['request-schema'];
+      const errors = JsonSchemaService.validate(schema, jsonData);
+      setValidationResult(errors);
+    } catch (error) {
+      setValidationResult(['Invalid JSON format']);
+    }
+  }, [validationInput, method]);
+
+  const getValidationResultDisplay = () => {
+    if (!validationInput) return null;
+
+    if (validationResult.length === 0) {
+      return (
+        <div className="mt-4 p-3 bg-green-50 text-green-700 rounded">
+          <div className="font-medium">JSON is valid</div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-4">
+        <div className="font-medium mb-2 text-red-600">Validation Results</div>
+        <div className="bg-red-50 border border-red-200 rounded p-3">
+          <div className="space-y-1">
+            {validationResult.map((error, index) => (
+              <div key={index} className="text-red-600 font-mono text-sm">
+                • {error}
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 text-sm text-red-600">
+            {validationResult.length} error{validationResult.length > 1 ? 's' : ''}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const handleRequestBodyChange = (value: string) => {
+    setRequestBody(value);
+    try {
+      // Validate JSON format
+      JSON.parse(value);
+    } catch (error) {
+      // Invalid JSON - you could add error state handling here
+    }
+  };
 
   const handleSend = async () => {
     try {
@@ -80,11 +145,19 @@ export default function ApiTestDialog({
       const headerObj = Object.fromEntries(validHeaders.map(h => [h.key, h.value]));
 
       // Prepare request object
+      let parsedBody = {};
+      try {
+        parsedBody = JSON.parse(requestBody);
+      } catch (error) {
+        console.error('Invalid JSON in request body');
+        return;
+      }
+
       const apiRequest = {
         url,
         method: method['namespace-account-method-type'],
         headers: headerObj,
-        ...(method['namespace-account-method-type'] !== 'GET' && { body: requestBody })
+        ...(method['namespace-account-method-type'] !== 'GET' && { body: parsedBody })
       };
 
       // Make the API call through proxy
@@ -107,19 +180,32 @@ export default function ApiTestDialog({
       setResponseHeaders(apiResponse.headers);
       setResponse(apiResponse.data);
 
-      // Save sample data
+      // Generate and save both request and response schemas
       if (response.ok) {
         try {
-          console.log('[Sample] Saving request/response samples');
+          console.log('[Schema] Generating and saving schemas');
+          
+          // Generate both schemas
+          const requestSchema = JsonSchemaService.generateSchema(parsedBody);
+          const responseSchema = JsonSchemaService.generateSchema(apiResponse.data);
+          
+          // Update Firebase with both schemas
           const methodRef = doc(db, 'namespace-account-method', method['method-id']);
           await updateDoc(methodRef, {
-            'sample-request': requestBody,
+            'request-schema': requestSchema,
+            'response-schema': responseSchema,
+            'sample-request': parsedBody,
             'sample-response': apiResponse.data,
-            'request-schema': JsonSchemaService.generateSchema(requestBody),
-            'response-schema': JsonSchemaService.generateSchema(apiResponse.data)
+            'last-updated': new Date().toISOString()
           });
+
+          // Update local method state
+          method['request-schema'] = requestSchema;
+          method['response-schema'] = responseSchema;
+          method['sample-request'] = parsedBody;
+          method['sample-response'] = apiResponse.data;
         } catch (error) {
-          console.error('[Sample] Error saving sample data:', error);
+          console.error('[Schema] Error saving schemas:', error);
         }
       }
     } catch (error) {
@@ -128,6 +214,22 @@ export default function ApiTestDialog({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(JSON.stringify(text, null, 2));
+  };
+
+  const handleDownload = (data: any, type: 'json' | 'schema') => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${type === 'json' ? 'data' : 'schema'}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   if (!isOpen) return null;
@@ -178,10 +280,10 @@ export default function ApiTestDialog({
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 p-6 grid grid-cols-2 gap-6 overflow-hidden">
-          {/* Request Section */}
-          <div className="flex flex-col">
+        {/* Main content area - Split into left and right panels */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left panel - API Testing */}
+          <div className="w-1/2 p-6 overflow-auto border-r">
             {/* URL Display */}
             <div className="mb-4">
               <h4 className="font-medium mb-2">URL</h4>
@@ -294,71 +396,110 @@ export default function ApiTestDialog({
               )}
 
               {activeTab === 'body' && (
-                <textarea
-                  value={JSON.stringify(requestBody, null, 2)}
-                  onChange={(e) => {
-                    try {
-                      setRequestBody(JSON.parse(e.target.value));
-                    } catch (error) {
-                      // Handle invalid JSON
-                    }
-                  }}
-                  className="w-full h-full font-mono text-sm p-2 border rounded"
-                  spellCheck={false}
-                />
+                <div className="space-y-2">
+                  <textarea
+                    value={requestBody}
+                    onChange={(e) => handleRequestBodyChange(e.target.value)}
+                    className="w-full h-64 font-mono text-sm p-2 border rounded"
+                    placeholder="Enter request body JSON..."
+                    spellCheck={false}
+                  />
+                </div>
               )}
             </div>
 
             <button
               onClick={handleSend}
               disabled={loading}
-              className="mt-4 px-4 py-2 bg-[#ff6b4a] text-white rounded flex items-center justify-center gap-2"
+              className="mt-4 w-full py-2 bg-[#ff6b4a] text-white rounded hover:bg-[#ff5436]"
             >
-              <FiSend /> {loading ? 'Sending...' : 'Send Request'}
+              {loading ? 'Sending...' : 'Send Request'}
             </button>
           </div>
 
-          {/* Response Section */}
-          <div className="flex flex-col">
-            <div className="border-b mb-4">
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setResponseTab('body')}
-                  className={`px-4 py-2 ${responseTab === 'body' ? 'border-b-2 border-[#ff6b4a] text-[#ff6b4a]' : 'text-gray-600'}`}
-                >
-                  Response Body
-                </button>
-                <button
-                  onClick={() => setResponseTab('headers')}
-                  className={`px-4 py-2 ${responseTab === 'headers' ? 'border-b-2 border-[#ff6b4a] text-[#ff6b4a]' : 'text-gray-600'}`}
-                >
-                  Response Headers
-                </button>
-              </div>
+          {/* Right panel - Schema & Response */}
+          <div className="w-1/2 p-6 overflow-auto">
+            {/* Response Tabs */}
+            <div className="flex gap-4 border-b mb-4">
+              <button
+                onClick={() => setResponseTab('body')}
+                className={`px-4 py-2 ${responseTab === 'body' ? 'border-b-2 border-[#ff6b4a] text-[#ff6b4a]' : 'text-gray-600'}`}
+              >
+                Response
+              </button>
+              <button
+                onClick={() => {
+                  setShowSchemaDialog(true);
+                  setResponseTab('schema');
+                }}
+                className={`px-4 py-2 ${responseTab === 'schema' ? 'border-b-2 border-[#ff6b4a] text-[#ff6b4a]' : 'text-gray-600'}`}
+              >
+                Schema Validation
+              </button>
             </div>
 
-            <div className="flex-1 border rounded bg-gray-50 overflow-auto">
-              {responseTab === 'body' ? (
-                response ? (
-                  <JsonTreeView data={response} />
-                ) : (
-                  <div className="text-gray-500 text-center mt-4">
-                    No response yet. Click Send Request to test the API.
-                  </div>
-                )
-              ) : (
-                <div className="p-4">
-                  {Object.entries(responseHeaders).map(([key, value]) => (
-                    <div key={key} className="mb-2">
-                      <span className="font-medium">{key}:</span> {value}
-                    </div>
-                  ))}
+            {/* Response Content */}
+            {responseTab === 'body' ? (
+              <div className="space-y-4">
+                <div className="flex gap-4 border-b">
+                  <button
+                    onClick={() => setResponseBodyTab('body')}
+                    className={`px-4 py-2 ${responseBodyTab === 'body' ? 'border-b-2 border-[#ff6b4a] text-[#ff6b4a]' : 'text-gray-600'}`}
+                  >
+                    Response Body
+                  </button>
+                  <button
+                    onClick={() => setResponseBodyTab('headers')}
+                    className={`px-4 py-2 ${responseBodyTab === 'headers' ? 'border-b-2 border-[#ff6b4a] text-[#ff6b4a]' : 'text-gray-600'}`}
+                  >
+                    Response Headers
+                  </button>
                 </div>
-              )}
-            </div>
+
+                <div className="border rounded bg-gray-50 p-4 overflow-auto">
+                  {responseBodyTab === 'body' ? (
+                    response ? (
+                      <JsonTreeView data={response} />
+                    ) : (
+                      <div className="text-gray-500 text-center">
+                        No response yet. Click Send Request to test the API.
+                      </div>
+                    )
+                  ) : (
+                    <div className="space-y-2">
+                      {Object.entries(responseHeaders).map(([key, value]) => (
+                        <div key={key} className="flex">
+                          <span className="font-medium min-w-[200px]">{key}:</span>
+                          <span className="text-gray-600">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                Schema validation view is now in a separate dialog
+              </div>
+            )}
+
+            {/* Schema Dialog */}
+            {showSchemaDialog && (
+              <RequestSchemaDialog
+                title="Response Data & Schema"
+                method={method}
+                currentResponse={response}
+                onClose={() => {
+                  setShowSchemaDialog(false);
+                  setResponseTab('body');
+                }}
+              />
+            )}
           </div>
         </div>
       </div>
     </div>
   );
-} 
+};
+
+export default ApiTestDialog; 

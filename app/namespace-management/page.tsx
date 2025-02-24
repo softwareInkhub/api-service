@@ -15,8 +15,6 @@ import {
   FirebaseMethod
 } from '../types/namespace';
 import { HttpMethod } from '../types/namespace';
-import KeyValueTable from '../components/shared/KeyValueTable';
-import TabHeader from '../components/shared/TabHeader';
 import { JsonSchemaService } from '../services/jsonSchemaService';
 import { makeApiCall } from '../services/apiService';
 import ApiTestDialog from '../components/namespace/ApiTestDialog';
@@ -439,52 +437,52 @@ export default function NamespaceManagement() {
     }
   };
 
-  const handleApiCall = async (method: NamespaceMethod, requestData: any) => {
-    try {
-      // Make the API call
-      const response = await makeApiCall(method, requestData);
+  // const handleApiCall = async (method: NamespaceMethod, requestData: any) => {
+  //   try {
+  //     // Make the API call
+  //     const response = await makeApiCall(method, requestData);
       
-      // Generate schemas first
-      const requestSchema = JsonSchemaService.generateSchema(requestData);
-      const responseSchema = JsonSchemaService.generateSchema(response);
+  //     // Generate schemas first
+  //     const requestSchema = JsonSchemaService.generateSchema(requestData);
+  //     const responseSchema = JsonSchemaService.generateSchema(response);
       
-      // Update Firebase with complete method data
-      const methodRef = doc(db, 'namespace-account-method', method['method-id']);
-      const updateData = {
-        'method-id': method['method-id'],
-        'namespace-id': method['namespace-id'],
-        'sample-request': requestData,
-        'request-schema': requestSchema,
-        'sample-response': response,
-        'response-schema': responseSchema,
-        'last-updated': new Date().toISOString()
-      };
+  //     // Update Firebase with complete method data
+  //     const methodRef = doc(db, 'namespace-account-method', method['method-id']);
+  //     const updateData = {
+  //       'method-id': method['method-id'],
+  //       'namespace-id': method['namespace-id'],
+  //       'sample-request': requestData,
+  //       'request-schema': requestSchema,
+  //       'sample-response': response,
+  //       'response-schema': responseSchema,
+  //       'last-updated': new Date().toISOString()
+  //     };
 
-      // Use setDoc instead of updateDoc to ensure complete document update
-      await setDoc(methodRef, updateData, { merge: true });
+  //     // Use setDoc instead of updateDoc to ensure complete document update
+  //     await setDoc(methodRef, updateData, { merge: true });
 
-      // Refresh UI
-      await loadAccountsAndMethods(method['namespace-id']);
+  //     // Refresh UI
+  //     await loadAccountsAndMethods(method['namespace-id']);
       
-      // Update modal if open
-      if (showJsonModal && jsonModalData?.data?.methodId === method['method-id']) {
-        const updatedMethod = {
-          ...method,
-          ...updateData
-        };
-        showPrettyJson(
-          jsonModalData.title,
-          updatedMethod,
-          jsonModalData.title.toLowerCase().includes('response') ? 'response' : 'request'
-        );
-      }
+  //     // Update modal if open
+  //     if (showJsonModal && jsonModalData?.data?.methodId === method['method-id']) {
+  //       const updatedMethod = {
+  //         ...method,
+  //         ...updateData
+  //       };
+  //       showPrettyJson(
+  //         jsonModalData.title,
+  //         updatedMethod,
+  //         jsonModalData.title.toLowerCase().includes('response') ? 'response' : 'request'
+  //       );
+  //     }
 
-      return response;
-    } catch (error) {
-      console.error('API call failed:', error);
-      throw error;
-    }
-  };
+  //     return response;
+  //   } catch (error) {
+  //     console.error('API call failed:', error);
+  //     throw error;
+  //   }
+  // };
 
   return (
     <div className="p-6">
@@ -592,14 +590,12 @@ export default function NamespaceManagement() {
                       >
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div>
-                            <label className="text-sm font-medium text-gray-600">Sample Request</label>
                             <div className="mt-1 flex items-center gap-2">
-                              <span className="text-gray-500 text-sm">[Sample Data Available]</span>
                               <button
                                 onClick={() => showPrettyJson('Request Data & Schema', method, 'request')}
                                 className="text-blue-600 hover:text-blue-800 text-sm"
                               >
-                                View JSON & Schema
+                                Latest Request
                               </button>
                               <button
                                 onClick={() => {
@@ -613,14 +609,12 @@ export default function NamespaceManagement() {
                             </div>
                           </div>
                           <div>
-                            <label className="text-sm font-medium text-gray-600">Sample Response</label>
                             <div className="mt-1 flex items-center gap-2">
-                              <span className="text-gray-500 text-sm">[Sample Data Available]</span>
                               <button
                                 onClick={() => showPrettyJson('Response Data & Schema', method, 'response')}
                                 className="text-blue-600 hover:text-blue-800 text-sm"
                               >
-                                View JSON & Schema
+                                Latest Response
                               </button>
                             </div>
                           </div>
@@ -868,9 +862,8 @@ export default function NamespaceManagement() {
           isOpen={showApiTest}
           onClose={() => setShowApiTest(false)}
           method={selectedTestMethod}
-          namespace={namespaces.find(n => n.id === selectedTestMethod['namespace-id'])!}
+          namespace={namespaces.find(n => n.id === selectedTestMethod['namespace-id']) || namespaces[0]}
           accounts={accounts[selectedTestMethod['namespace-id']] || []}
-          initialAccount={accounts[selectedTestMethod['namespace-id']]?.[0]}
         />
       )}
     </div>
