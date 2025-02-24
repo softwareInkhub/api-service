@@ -6,7 +6,7 @@ import Sidebar from './components/Sidebar';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'API Tools',
+  title: 'ADMIN',
   description: 'API testing and management tools',
 };
 

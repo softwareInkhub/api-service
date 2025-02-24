@@ -864,6 +864,15 @@ function ApiTester() {
     const [requestFormat, setRequestFormat] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('json');
     const [expandedHistoryId, setExpandedHistoryId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [showSaveTemplate, setShowSaveTemplate] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [selectedMethod, setSelectedMethod] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [selectedNamespace, setSelectedNamespace] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [selectedAccount, setSelectedAccount] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [loopLoading, setLoopLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [iterationCount, setIterationCount] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
+    const [executions, setExecutions] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
+    const [pollingInterval, setPollingInterval] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [executionStartTime, setExecutionStartTime] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [currentExecutionId, setCurrentExecutionId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     // Load history from localStorage on mount
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "ApiTester.useEffect": ()=>{
@@ -985,29 +994,15 @@ function ApiTester() {
     };
     const handleSend = async ()=>{
         try {
-            console.group('API Request');
-            // Log request details
-            console.log('Request URL:', url);
-            console.log('Method:', method);
-            console.log('Query Parameters:', queryParams.filter((p)=>p.key));
-            console.log('Headers:', headers.filter((h)=>h.key));
-            if (method !== 'GET') {
-                console.log('Request Body:', requestBody);
-            }
             setLoading(true);
             const startTime = performance.now();
-            // Format request body based on method
-            let formattedBody;
-            if (method !== 'GET') {
-                try {
-                    // If requestBody is string, parse it as JSON
-                    formattedBody = typeof requestBody === 'string' ? JSON.parse(requestBody) : requestBody;
-                } catch (error) {
-                    console.error('Invalid JSON in request body:', error);
-                    throw new Error('Invalid JSON in request body');
-                }
-            }
-            // Send request through our backend proxy
+            console.log('[Request] Sending single request:', {
+                method,
+                url,
+                queryParams,
+                headers,
+                body: requestBody
+            });
             const response = await fetch(`${("TURBOPACK compile-time value", "http://localhost:3000")}/api/openApi/proxy`, {
                 method: 'POST',
                 headers: {
@@ -1024,46 +1019,26 @@ function ApiTester() {
                         acc[key] = value;
                         return acc;
                     }, {}),
-                    body: formattedBody // Use formatted body
+                    body: requestBody
                 })
             });
+            const responseData = await response.json();
             const endTime = performance.now();
             const responseTime = Math.round(endTime - startTime);
-            const responseData = await response.json();
-            console.group('API Response');
-            console.log('Status:', responseData.status);
-            console.log('Time:', `${responseTime}ms`);
-            console.log('Size:', JSON.stringify(responseData.data).length, 'bytes');
-            console.log('Headers:', responseData.headers);
-            console.log('Body:', responseData.data);
-            console.groupEnd();
-            setResponse({
-                status: responseData.status,
-                data: responseData.data,
-                headers: responseData.headers,
+            console.log('[Response] Received:', {
+                status: response.status,
+                headers: Object.fromEntries(response.headers.entries()),
+                data: responseData,
                 time: `${responseTime}ms`
             });
-            // Add to history
-            const historyItem = {
-                id: crypto.randomUUID(),
-                timestamp: Date.now(),
-                method,
-                url,
-                queryParams: queryParams.filter((p)=>p.key),
-                headers: headers.filter((h)=>h.key),
-                body: requestBody,
-                response: {
-                    status: responseData.status,
-                    data: responseData.data,
-                    headers: responseData.headers
-                }
-            };
-            setHistory((prev)=>[
-                    historyItem,
-                    ...prev
-                ]);
+            setResponse({
+                status: response.status,
+                data: responseData,
+                headers: Object.fromEntries(response.headers.entries()),
+                time: `${responseTime}ms`
+            });
         } catch (error) {
-            console.error('Request Error:', error);
+            console.error('[Error] Request failed:', error);
             setResponse({
                 status: 0,
                 data: {
@@ -1074,7 +1049,6 @@ function ApiTester() {
             });
         } finally{
             setLoading(false);
-            console.groupEnd();
         }
     };
     const loadFromHistory = (item)=>{
@@ -1127,6 +1101,10 @@ function ApiTester() {
         }
     };
     const handleMethodSelect = async (method)=>{
+        setSelectedMethod(method);
+        setSelectedNamespace(await __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$services$2f$namespaceService$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["namespaceService"].getNamespace(method['namespace-id']));
+        const accounts = await __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$services$2f$namespaceService$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["namespaceService"].getNamespaceAccounts(method['namespace-id']);
+        setSelectedAccount(accounts[0] || null);
         console.group('API Form Population');
         // Log Method Details
         console.group('Method Details');
@@ -1136,7 +1114,6 @@ function ApiTester() {
         console.log('Query Parameters:', method['namespace-account-method-queryParams']);
         console.groupEnd();
         // Get Account and Namespace Details
-        const accounts = await __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$services$2f$namespaceService$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["namespaceService"].getNamespaceAccounts(method['namespace-id']);
         const account = accounts[0];
         const namespace = await __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$services$2f$namespaceService$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["namespaceService"].getNamespace(method['namespace-id']);
         console.group('URL Resolution');
@@ -1264,6 +1241,128 @@ function ApiTester() {
             setLoading(false);
         }
     };
+    const fetchExecutions = async ()=>{
+        if (!executionStartTime) return;
+        try {
+            const response = await fetch(`${("TURBOPACK compile-time value", "http://localhost:3000")}/api/openApi/executions/paginated/${executionStartTime}`);
+            const data = await response.json();
+            console.log('[Executions] Updated:', {
+                count: data.length,
+                statuses: data.map((exec)=>({
+                        page: exec['pagination-page'],
+                        status: exec['execution-status'],
+                        time: exec['execution-time-taken']
+                    }))
+            });
+            setExecutions(data);
+            if (data.every((exec)=>[
+                    'Completed',
+                    'Failed'
+                ].includes(exec['execution-status']))) {
+                console.log('[Executions] All pages completed, stopping poll');
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    setPollingInterval(null);
+                }
+            }
+        } catch (error) {
+            console.error('[Error] Fetching executions failed:', error);
+        }
+    };
+    const handleSendLoop = async ()=>{
+        try {
+            setLoopLoading(true);
+            setExecutionStartTime(Date.now());
+            setCurrentExecutionId(null);
+            setExecutions([]);
+            const requestStartTime = performance.now();
+            console.log('[Paginated] Starting request:', {
+                method,
+                url,
+                maxIterations: iterationCount,
+                queryParams,
+                headers,
+                body: requestBody
+            });
+            const response = await fetch(`${("TURBOPACK compile-time value", "http://localhost:3000")}/api/openApi/proxy/paginated`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Accept-Encoding': 'gzip, deflate, br'
+                },
+                body: JSON.stringify({
+                    namespaceMethodId: selectedMethod?.id || '',
+                    namespaceId: selectedNamespace?.id || '',
+                    namespaceAccountId: selectedAccount?.id || '',
+                    method,
+                    url,
+                    maxIterations: iterationCount ? parseInt(iterationCount) : undefined,
+                    queryParams: queryParams.filter((p)=>p.key).reduce((acc, { key, value })=>{
+                        acc[key] = value;
+                        return acc;
+                    }, {}),
+                    headers: headers.filter((h)=>h.key).reduce((acc, { key, value })=>{
+                        acc[key] = value;
+                        return acc;
+                    }, {}),
+                    body: requestBody
+                })
+            });
+            const responseData = await response.json();
+            const endTime = performance.now();
+            const responseTime = Math.round(endTime - requestStartTime);
+            if (!response.ok) {
+                throw new Error(responseData.error || 'Failed to process request');
+            }
+            console.log('[Paginated] First iteration response:', {
+                status: response.status,
+                headers: Object.fromEntries(response.headers.entries()),
+                metadata: responseData.metadata,
+                data: responseData.data,
+                time: `${responseTime}ms`
+            });
+            if (responseData.metadata?.executionId) {
+                console.log('[Execution] Starting background polling, ID:', responseData.metadata.executionId);
+                setCurrentExecutionId(responseData.metadata.executionId);
+                const interval = setInterval(fetchExecutions, 1000);
+                setPollingInterval(interval);
+            }
+            setResponse({
+                status: responseData.status,
+                data: responseData.data || null,
+                headers: Object.fromEntries(response.headers.entries()),
+                time: `${responseTime}ms`
+            });
+        } catch (error) {
+            console.error('[Error] Paginated request failed:', error);
+            setResponse({
+                status: 500,
+                data: {
+                    error: 'Paginated request failed',
+                    details: error instanceof Error ? error.message : 'Unknown error'
+                },
+                headers: {},
+                time: '0ms'
+            });
+        } finally{
+            setLoopLoading(false);
+        }
+    };
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "ApiTester.useEffect": ()=>{
+            return ({
+                "ApiTester.useEffect": ()=>{
+                    if (pollingInterval) {
+                        clearInterval(pollingInterval);
+                    }
+                }
+            })["ApiTester.useEffect"];
+        }
+    }["ApiTester.useEffect"], [
+        pollingInterval
+    ]);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "h-screen flex flex-col bg-gray-50",
         children: [
@@ -1279,7 +1378,7 @@ function ApiTester() {
                                 children: "API Tester"
                             }, void 0, false, {
                                 fileName: "[project]/app/api-tester/page.tsx",
-                                lineNumber: 523,
+                                lineNumber: 638,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1290,30 +1389,30 @@ function ApiTester() {
                                         size: 14
                                     }, void 0, false, {
                                         fileName: "[project]/app/api-tester/page.tsx",
-                                        lineNumber: 528,
+                                        lineNumber: 643,
                                         columnNumber: 15
                                     }, this),
                                     "History"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/api-tester/page.tsx",
-                                lineNumber: 524,
+                                lineNumber: 639,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/api-tester/page.tsx",
-                        lineNumber: 522,
+                        lineNumber: 637,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/app/api-tester/page.tsx",
-                    lineNumber: 521,
+                    lineNumber: 636,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/api-tester/page.tsx",
-                lineNumber: 520,
+                lineNumber: 635,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
@@ -1325,12 +1424,12 @@ function ApiTester() {
                             onMethodSelect: handleMethodSelect
                         }, void 0, false, {
                             fileName: "[project]/app/api-tester/page.tsx",
-                            lineNumber: 539,
+                            lineNumber: 654,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/app/api-tester/page.tsx",
-                        lineNumber: 538,
+                        lineNumber: 653,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -1352,7 +1451,7 @@ function ApiTester() {
                                                         children: "GET"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 552,
+                                                        lineNumber: 667,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1360,7 +1459,7 @@ function ApiTester() {
                                                         children: "POST"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 553,
+                                                        lineNumber: 668,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1368,7 +1467,7 @@ function ApiTester() {
                                                         children: "PUT"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 554,
+                                                        lineNumber: 669,
                                                         columnNumber: 17
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1376,13 +1475,13 @@ function ApiTester() {
                                                         children: "DELETE"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 555,
+                                                        lineNumber: 670,
                                                         columnNumber: 17
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                lineNumber: 547,
+                                                lineNumber: 662,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1393,31 +1492,81 @@ function ApiTester() {
                                                 className: "flex-1 px-2 py-1 border rounded text-sm"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                lineNumber: 557,
+                                                lineNumber: 672,
                                                 columnNumber: 15
                                             }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                onClick: handleSend,
-                                                className: "px-4 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 flex items-center gap-1",
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "flex items-center gap-2",
                                                 children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiSend"], {
-                                                        size: 14
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                        onClick: handleSend,
+                                                        disabled: loading || loopLoading,
+                                                        className: "px-4 py-2 bg-[#ff6b4a] text-white rounded-md flex items-center gap-2 hover:bg-[#ff5436] disabled:opacity-50",
+                                                        children: loading ? 'Sending...' : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiSend"], {}, void 0, false, {
+                                                                    fileName: "[project]/app/api-tester/page.tsx",
+                                                                    lineNumber: 687,
+                                                                    columnNumber: 23
+                                                                }, this),
+                                                                " Send"
+                                                            ]
+                                                        }, void 0, true)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 568,
+                                                        lineNumber: 680,
                                                         columnNumber: 17
                                                     }, this),
-                                                    "Send"
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "flex items-center gap-2",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                                                type: "number",
+                                                                value: iterationCount,
+                                                                onChange: (e)=>setIterationCount(e.target.value),
+                                                                placeholder: "Max iterations",
+                                                                className: "w-32 px-2 py-1 border rounded text-sm",
+                                                                min: "1"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/api-tester/page.tsx",
+                                                                lineNumber: 693,
+                                                                columnNumber: 19
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                onClick: handleSendLoop,
+                                                                disabled: loading || loopLoading,
+                                                                className: "px-4 py-2 bg-[#4a90ff] text-white rounded-md flex items-center gap-2 hover:bg-[#3672ff] disabled:opacity-50",
+                                                                children: loopLoading ? 'Processing...' : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiRefreshCw"], {}, void 0, false, {
+                                                                            fileName: "[project]/app/api-tester/page.tsx",
+                                                                            lineNumber: 708,
+                                                                            columnNumber: 25
+                                                                        }, this),
+                                                                        " Send Loop"
+                                                                    ]
+                                                                }, void 0, true)
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/api-tester/page.tsx",
+                                                                lineNumber: 701,
+                                                                columnNumber: 19
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/api-tester/page.tsx",
+                                                        lineNumber: 692,
+                                                        columnNumber: 17
+                                                    }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                lineNumber: 564,
+                                                lineNumber: 679,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/api-tester/page.tsx",
-                                        lineNumber: 546,
+                                        lineNumber: 661,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1432,18 +1581,18 @@ function ApiTester() {
                                                 children: tab
                                             }, tab, false, {
                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                lineNumber: 576,
+                                                lineNumber: 719,
                                                 columnNumber: 17
                                             }, this))
                                     }, void 0, false, {
                                         fileName: "[project]/app/api-tester/page.tsx",
-                                        lineNumber: 574,
+                                        lineNumber: 717,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/api-tester/page.tsx",
-                                lineNumber: 545,
+                                lineNumber: 660,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1466,7 +1615,7 @@ function ApiTester() {
                                                                     className: "flex-1 px-3 py-2 border rounded"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 597,
+                                                                    lineNumber: 740,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1477,7 +1626,7 @@ function ApiTester() {
                                                                     className: "flex-1 px-3 py-2 border rounded"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 604,
+                                                                    lineNumber: 747,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1486,13 +1635,13 @@ function ApiTester() {
                                                                     children: "Remove"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 611,
+                                                                    lineNumber: 754,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, index, true, {
                                                             fileName: "[project]/app/api-tester/page.tsx",
-                                                            lineNumber: 596,
+                                                            lineNumber: 739,
                                                             columnNumber: 21
                                                         }, this)),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1501,13 +1650,13 @@ function ApiTester() {
                                                         children: "Add"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 619,
+                                                        lineNumber: 762,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                lineNumber: 594,
+                                                lineNumber: 737,
                                                 columnNumber: 17
                                             }, this),
                                             activeTab === 'headers' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1524,7 +1673,7 @@ function ApiTester() {
                                                                     className: "flex-1 px-3 py-2 border rounded"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 632,
+                                                                    lineNumber: 775,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1535,7 +1684,7 @@ function ApiTester() {
                                                                     className: "flex-1 px-3 py-2 border rounded"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 639,
+                                                                    lineNumber: 782,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1544,13 +1693,13 @@ function ApiTester() {
                                                                     children: "Remove"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 646,
+                                                                    lineNumber: 789,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, index, true, {
                                                             fileName: "[project]/app/api-tester/page.tsx",
-                                                            lineNumber: 631,
+                                                            lineNumber: 774,
                                                             columnNumber: 21
                                                         }, this)),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1559,13 +1708,13 @@ function ApiTester() {
                                                         children: "Add"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 654,
+                                                        lineNumber: 797,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                lineNumber: 629,
+                                                lineNumber: 772,
                                                 columnNumber: 17
                                             }, this),
                                             activeTab === 'body' && method !== 'GET' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1585,7 +1734,7 @@ function ApiTester() {
                                                                             children: "JSON"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/app/api-tester/page.tsx",
-                                                                            lineNumber: 669,
+                                                                            lineNumber: 812,
                                                                             columnNumber: 25
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1594,13 +1743,13 @@ function ApiTester() {
                                                                             children: "Form"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/app/api-tester/page.tsx",
-                                                                            lineNumber: 675,
+                                                                            lineNumber: 818,
                                                                             columnNumber: 25
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 668,
+                                                                    lineNumber: 811,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1617,13 +1766,13 @@ function ApiTester() {
                                                                     children: "Format"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 682,
+                                                                    lineNumber: 825,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/api-tester/page.tsx",
-                                                            lineNumber: 667,
+                                                            lineNumber: 810,
                                                             columnNumber: 21
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1649,12 +1798,12 @@ function ApiTester() {
                                                                         spellCheck: false
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 708,
+                                                                        lineNumber: 851,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 707,
+                                                                    lineNumber: 850,
                                                                     columnNumber: 23
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1680,7 +1829,7 @@ function ApiTester() {
                                                                                             className: "flex-1 px-3 py-2 border rounded"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/app/api-tester/page.tsx",
-                                                                                            lineNumber: 737,
+                                                                                            lineNumber: 880,
                                                                                             columnNumber: 33
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1696,7 +1845,7 @@ function ApiTester() {
                                                                                             className: "flex-1 px-3 py-2 border rounded"
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/app/api-tester/page.tsx",
-                                                                                            lineNumber: 749,
+                                                                                            lineNumber: 892,
                                                                                             columnNumber: 33
                                                                                         }, this),
                                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1710,18 +1859,18 @@ function ApiTester() {
                                                                                             className: "text-red-500 hover:text-red-600",
                                                                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiTrash2"], {}, void 0, false, {
                                                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                                                lineNumber: 769,
+                                                                                                lineNumber: 912,
                                                                                                 columnNumber: 35
                                                                                             }, this)
                                                                                         }, void 0, false, {
                                                                                             fileName: "[project]/app/api-tester/page.tsx",
-                                                                                            lineNumber: 761,
+                                                                                            lineNumber: 904,
                                                                                             columnNumber: 33
                                                                                         }, this)
                                                                                     ]
                                                                                 }, index, true, {
                                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                                    lineNumber: 736,
+                                                                                    lineNumber: 879,
                                                                                     columnNumber: 31
                                                                                 }, this)),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1736,20 +1885,20 @@ function ApiTester() {
                                                                                 children: [
                                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiPlus"], {}, void 0, false, {
                                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                                        lineNumber: 783,
+                                                                                        lineNumber: 926,
                                                                                         columnNumber: 31
                                                                                     }, this),
                                                                                     " Add Field"
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                                lineNumber: 773,
+                                                                                lineNumber: 916,
                                                                                 columnNumber: 29
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 730,
+                                                                        lineNumber: 873,
                                                                         columnNumber: 27
                                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                                         className: "font-mono text-sm whitespace-pre-wrap",
@@ -1762,35 +1911,35 @@ function ApiTester() {
                                                                         })()
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 787,
+                                                                        lineNumber: 930,
                                                                         columnNumber: 27
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 728,
+                                                                    lineNumber: 871,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/api-tester/page.tsx",
-                                                            lineNumber: 705,
+                                                            lineNumber: 848,
                                                             columnNumber: 21
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                    lineNumber: 666,
+                                                    lineNumber: 809,
                                                     columnNumber: 19
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                lineNumber: 664,
+                                                lineNumber: 807,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/app/api-tester/page.tsx",
-                                        lineNumber: 592,
+                                        lineNumber: 735,
                                         columnNumber: 13
                                     }, this),
                                     response && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -1799,7 +1948,7 @@ function ApiTester() {
                                                 className: "my-6 border-t border-gray-200"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                lineNumber: 814,
+                                                lineNumber: 957,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1810,7 +1959,7 @@ function ApiTester() {
                                                         children: "Response"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 818,
+                                                        lineNumber: 961,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1824,7 +1973,7 @@ function ApiTester() {
                                                                         children: "Status:"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 821,
+                                                                        lineNumber: 964,
                                                                         columnNumber: 23
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1832,13 +1981,13 @@ function ApiTester() {
                                                                         children: response.status
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 822,
+                                                                        lineNumber: 965,
                                                                         columnNumber: 23
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                lineNumber: 820,
+                                                                lineNumber: 963,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1849,7 +1998,7 @@ function ApiTester() {
                                                                         children: "Time:"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 831,
+                                                                        lineNumber: 974,
                                                                         columnNumber: 23
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1857,13 +2006,13 @@ function ApiTester() {
                                                                         children: response.time || '200ms'
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 832,
+                                                                        lineNumber: 975,
                                                                         columnNumber: 23
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                lineNumber: 830,
+                                                                lineNumber: 973,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1874,7 +2023,7 @@ function ApiTester() {
                                                                         children: "Size:"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 835,
+                                                                        lineNumber: 978,
                                                                         columnNumber: 23
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1885,25 +2034,25 @@ function ApiTester() {
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 836,
+                                                                        lineNumber: 979,
                                                                         columnNumber: 23
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                lineNumber: 834,
+                                                                lineNumber: 977,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 819,
+                                                        lineNumber: 962,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                lineNumber: 817,
+                                                lineNumber: 960,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1920,7 +2069,7 @@ function ApiTester() {
                                                                         children: "Body"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 846,
+                                                                        lineNumber: 989,
                                                                         columnNumber: 23
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1931,18 +2080,18 @@ function ApiTester() {
                                                                             size: 14
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/app/api-tester/page.tsx",
-                                                                            lineNumber: 852,
+                                                                            lineNumber: 995,
                                                                             columnNumber: 25
                                                                         }, this)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 847,
+                                                                        lineNumber: 990,
                                                                         columnNumber: 23
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                lineNumber: 845,
+                                                                lineNumber: 988,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1953,23 +2102,23 @@ function ApiTester() {
                                                                         data: response.data
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 857,
+                                                                        lineNumber: 1000,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 856,
+                                                                    lineNumber: 999,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                lineNumber: 855,
+                                                                lineNumber: 998,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 844,
+                                                        lineNumber: 987,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1982,12 +2131,12 @@ function ApiTester() {
                                                                     children: "Headers"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 865,
+                                                                    lineNumber: 1008,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                lineNumber: 864,
+                                                                lineNumber: 1007,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1998,49 +2147,245 @@ function ApiTester() {
                                                                         data: response.headers
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 869,
+                                                                        lineNumber: 1012,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 868,
+                                                                    lineNumber: 1011,
                                                                     columnNumber: 23
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                lineNumber: 867,
+                                                                lineNumber: 1010,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 863,
+                                                        lineNumber: 1006,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                lineNumber: 842,
+                                                lineNumber: 985,
                                                 columnNumber: 17
                                             }, this)
                                         ]
-                                    }, void 0, true)
+                                    }, void 0, true),
+                                    executions.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "mt-6 border-t pt-6",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                                className: "text-lg font-medium mb-4",
+                                                children: "Execution Details"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/api-tester/page.tsx",
+                                                lineNumber: 1022,
+                                                columnNumber: 17
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "space-y-4",
+                                                children: executions.map((execution, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "border rounded-lg p-4",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "flex justify-between items-center mb-2",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        className: "font-medium",
+                                                                        children: [
+                                                                            "Execution #",
+                                                                            index + 1
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "[project]/app/api-tester/page.tsx",
+                                                                        lineNumber: 1027,
+                                                                        columnNumber: 25
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        className: `px-2 py-1 rounded text-sm ${execution['execution-status'] === 'Completed' ? 'bg-green-100 text-green-800' : execution['execution-status'] === 'Failed' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`,
+                                                                        children: execution['execution-status']
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/app/api-tester/page.tsx",
+                                                                        lineNumber: 1028,
+                                                                        columnNumber: 25
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/app/api-tester/page.tsx",
+                                                                lineNumber: 1026,
+                                                                columnNumber: 23
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "grid grid-cols-2 gap-4 text-sm",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                        className: "font-medium",
+                                                                                        children: "Start Time:"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/api-tester/page.tsx",
+                                                                                        lineNumber: 1038,
+                                                                                        columnNumber: 30
+                                                                                    }, this),
+                                                                                    " ",
+                                                                                    new Date(execution['execution-start-time']).toLocaleString()
+                                                                                ]
+                                                                            }, void 0, true, {
+                                                                                fileName: "[project]/app/api-tester/page.tsx",
+                                                                                lineNumber: 1038,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                        className: "font-medium",
+                                                                                        children: "Duration:"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/api-tester/page.tsx",
+                                                                                        lineNumber: 1039,
+                                                                                        columnNumber: 30
+                                                                                    }, this),
+                                                                                    " ",
+                                                                                    execution['execution-time-taken'],
+                                                                                    "ms"
+                                                                                ]
+                                                                            }, void 0, true, {
+                                                                                fileName: "[project]/app/api-tester/page.tsx",
+                                                                                lineNumber: 1039,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                        className: "font-medium",
+                                                                                        children: "Response Size:"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/api-tester/page.tsx",
+                                                                                        lineNumber: 1040,
+                                                                                        columnNumber: 30
+                                                                                    }, this),
+                                                                                    " ",
+                                                                                    execution['execution-response-size'],
+                                                                                    " bytes"
+                                                                                ]
+                                                                            }, void 0, true, {
+                                                                                fileName: "[project]/app/api-tester/page.tsx",
+                                                                                lineNumber: 1040,
+                                                                                columnNumber: 27
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "[project]/app/api-tester/page.tsx",
+                                                                        lineNumber: 1037,
+                                                                        columnNumber: 25
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                        className: "font-medium",
+                                                                                        children: "Status:"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/api-tester/page.tsx",
+                                                                                        lineNumber: 1043,
+                                                                                        columnNumber: 30
+                                                                                    }, this),
+                                                                                    " ",
+                                                                                    execution['response-status']
+                                                                                ]
+                                                                            }, void 0, true, {
+                                                                                fileName: "[project]/app/api-tester/page.tsx",
+                                                                                lineNumber: 1043,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                        className: "font-medium",
+                                                                                        children: "URL:"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/api-tester/page.tsx",
+                                                                                        lineNumber: 1044,
+                                                                                        columnNumber: 30
+                                                                                    }, this),
+                                                                                    " ",
+                                                                                    execution.url
+                                                                                ]
+                                                                            }, void 0, true, {
+                                                                                fileName: "[project]/app/api-tester/page.tsx",
+                                                                                lineNumber: 1044,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                        className: "font-medium",
+                                                                                        children: "Method:"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/api-tester/page.tsx",
+                                                                                        lineNumber: 1045,
+                                                                                        columnNumber: 30
+                                                                                    }, this),
+                                                                                    " ",
+                                                                                    execution.method
+                                                                                ]
+                                                                            }, void 0, true, {
+                                                                                fileName: "[project]/app/api-tester/page.tsx",
+                                                                                lineNumber: 1045,
+                                                                                columnNumber: 27
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "[project]/app/api-tester/page.tsx",
+                                                                        lineNumber: 1042,
+                                                                        columnNumber: 25
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/app/api-tester/page.tsx",
+                                                                lineNumber: 1036,
+                                                                columnNumber: 23
+                                                            }, this)
+                                                        ]
+                                                    }, execution.uuid, true, {
+                                                        fileName: "[project]/app/api-tester/page.tsx",
+                                                        lineNumber: 1025,
+                                                        columnNumber: 21
+                                                    }, this))
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/api-tester/page.tsx",
+                                                lineNumber: 1023,
+                                                columnNumber: 17
+                                            }, this)
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/api-tester/page.tsx",
+                                        lineNumber: 1021,
+                                        columnNumber: 15
+                                    }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/api-tester/page.tsx",
-                                lineNumber: 590,
+                                lineNumber: 733,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/api-tester/page.tsx",
-                        lineNumber: 543,
+                        lineNumber: 658,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/api-tester/page.tsx",
-                lineNumber: 536,
+                lineNumber: 651,
                 columnNumber: 7
             }, this),
             showHistory && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2054,7 +2399,7 @@ function ApiTester() {
                                 children: "Request History"
                             }, void 0, false, {
                                 fileName: "[project]/app/api-tester/page.tsx",
-                                lineNumber: 884,
+                                lineNumber: 1061,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2063,13 +2408,13 @@ function ApiTester() {
                                 children: "✕"
                             }, void 0, false, {
                                 fileName: "[project]/app/api-tester/page.tsx",
-                                lineNumber: 885,
+                                lineNumber: 1062,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/api-tester/page.tsx",
-                        lineNumber: 883,
+                        lineNumber: 1060,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2091,7 +2436,7 @@ function ApiTester() {
                                                             children: item.method
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/api-tester/page.tsx",
-                                                            lineNumber: 906,
+                                                            lineNumber: 1083,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2099,13 +2444,13 @@ function ApiTester() {
                                                             children: item.url
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/api-tester/page.tsx",
-                                                            lineNumber: 914,
+                                                            lineNumber: 1091,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                    lineNumber: 905,
+                                                    lineNumber: 1082,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2117,13 +2462,13 @@ function ApiTester() {
                                                     children: "Apply"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                    lineNumber: 919,
+                                                    lineNumber: 1096,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/api-tester/page.tsx",
-                                            lineNumber: 901,
+                                            lineNumber: 1078,
                                             columnNumber: 19
                                         }, this),
                                         expandedHistoryId === item.id && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2139,7 +2484,7 @@ function ApiTester() {
                                                                 children: new Date(item.timestamp).toLocaleString()
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                lineNumber: 936,
+                                                                lineNumber: 1113,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2153,7 +2498,7 @@ function ApiTester() {
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 941,
+                                                                        lineNumber: 1118,
                                                                         columnNumber: 31
                                                                     }, this),
                                                                     item.headers.some((h)=>h.key) && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2164,7 +2509,7 @@ function ApiTester() {
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 946,
+                                                                        lineNumber: 1123,
                                                                         columnNumber: 31
                                                                     }, this),
                                                                     item.body && Object.keys(item.body).length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2175,19 +2520,19 @@ function ApiTester() {
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                                        lineNumber: 951,
+                                                                        lineNumber: 1128,
                                                                         columnNumber: 31
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                lineNumber: 939,
+                                                                lineNumber: 1116,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 935,
+                                                        lineNumber: 1112,
                                                         columnNumber: 25
                                                     }, this),
                                                     item.response && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2203,12 +2548,12 @@ function ApiTester() {
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/app/api-tester/page.tsx",
-                                                                    lineNumber: 962,
+                                                                    lineNumber: 1139,
                                                                     columnNumber: 31
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                lineNumber: 961,
+                                                                lineNumber: 1138,
                                                                 columnNumber: 29
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2216,56 +2561,56 @@ function ApiTester() {
                                                                 children: JSON.stringify(item.response.data, null, 2)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                                lineNumber: 970,
+                                                                lineNumber: 1147,
                                                                 columnNumber: 29
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/api-tester/page.tsx",
-                                                        lineNumber: 960,
+                                                        lineNumber: 1137,
                                                         columnNumber: 27
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/api-tester/page.tsx",
-                                                lineNumber: 933,
+                                                lineNumber: 1110,
                                                 columnNumber: 23
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/api-tester/page.tsx",
-                                            lineNumber: 932,
+                                            lineNumber: 1109,
                                             columnNumber: 21
                                         }, this)
                                     ]
                                 }, item.id, true, {
                                     fileName: "[project]/app/api-tester/page.tsx",
-                                    lineNumber: 896,
+                                    lineNumber: 1073,
                                     columnNumber: 17
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/app/api-tester/page.tsx",
-                            lineNumber: 894,
+                            lineNumber: 1071,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/app/api-tester/page.tsx",
-                        lineNumber: 893,
+                        lineNumber: 1070,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/api-tester/page.tsx",
-                lineNumber: 882,
+                lineNumber: 1059,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/api-tester/page.tsx",
-        lineNumber: 518,
+        lineNumber: 633,
         columnNumber: 5
     }, this);
 }
-_s(ApiTester, "88CMEsQpJ6PZ1D2FmkEX0X1ax+4=");
+_s(ApiTester, "L0LnQ/xNnPVrj7zXbJb3m0Ntqd8=");
 _c2 = ApiTester;
 var _c, _c1, _c2;
 __turbopack_refresh__.register(_c, "JsonEditor$dynamic");

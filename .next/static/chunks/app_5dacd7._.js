@@ -1155,6 +1155,10 @@ function NamespaceManagement() {
     const [activeTab, setActiveTab] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('Namespaces');
     const [expandedTemplateId, setExpandedTemplateId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [selectedTemplate, setSelectedTemplate] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [showJsonModal, setShowJsonModal] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    const [jsonModalData, setJsonModalData] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [schemaTestData, setSchemaTestData] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
+    const [schemaValidationErrors, setSchemaValidationErrors] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "NamespaceManagement.useEffect": ()=>{
             loadNamespaces();
@@ -1201,7 +1205,7 @@ function NamespaceManagement() {
             const methodsQuery = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["query"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["collection"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$config$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'namespace-account-method'), (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["where"])('namespace-id', '==', namespaceId));
             const methodsSnapshot = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getDocs"])(methodsQuery);
             const methodsData = methodsSnapshot.docs.map((doc)=>({
-                    id: doc.id,
+                    "method-id": doc.id,
                     ...doc.data()
                 }));
             setMethods((prev)=>({
@@ -1282,16 +1286,18 @@ function NamespaceManagement() {
     };
     const handleAddMethod = async (namespaceId)=>{
         try {
-            const id = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2d$browser$2f$v4$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
+            const methodId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2d$browser$2f$v4$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
             const newMethod = {
-                id,
+                id: methodId,
+                'method-id': methodId,
+                'namespace-account-method-id': methodId,
                 'namespace-id': namespaceId,
                 'namespace-account-method-name': 'New Method',
                 'namespace-account-method-type': __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$types$2f$namespace$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["HttpMethod"].GET,
                 'namespace-account-method-url-override': '',
                 'namespace-account-method-queryParams': []
             };
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["setDoc"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$config$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'namespace-account-method', id), newMethod);
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["setDoc"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$config$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'namespace-account-method', methodId), newMethod);
             loadAccountsAndMethods(namespaceId);
         } catch (error) {
             console.error('Error adding method:', error);
@@ -1299,9 +1305,20 @@ function NamespaceManagement() {
     };
     const handleUpdateMethod = async (methodId, namespaceId, key, value)=>{
         try {
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["updateDoc"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$config$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'namespace-account-method', methodId), {
+            const methodRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$config$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'namespace-account-method', methodId);
+            const updateData = {
                 [key]: value
-            });
+            };
+            // Generate schemas from raw response without transformation
+            if (key === 'sample-request') {
+                updateData['request-schema'] = generateJsonSchema(value);
+            }
+            if (key === 'sample-response') {
+                // Save the complete response object as-is
+                updateData['sample-response'] = value;
+                updateData['response-schema'] = generateJsonSchema(value);
+            }
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["updateDoc"])(methodRef, updateData);
             loadAccountsAndMethods(namespaceId);
         } catch (error) {
             console.error('Error updating method:', error);
@@ -1344,12 +1361,20 @@ function NamespaceManagement() {
     };
     const handleDuplicateMethod = async (method, namespaceId)=>{
         try {
-            const { id, ...methodData } = method;
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["addDoc"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["collection"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$config$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'namespace-account-method'), {
-                ...methodData,
-                'namespace-account-method-name': `${methodData['namespace-account-method-name']} (Copy)`,
-                'namespace-account-method-id': (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2d$browser$2f$v4$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])()
-            });
+            const newMethodId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2d$browser$2f$v4$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
+            const methodData = {
+                ...method,
+                id: newMethodId,
+                'method-id': newMethodId,
+                'namespace-account-method-id': newMethodId,
+                'namespace-account-method-name': `${method['namespace-account-method-name']} (Copy)`,
+                'namespace-id': namespaceId,
+                'request-schema': method['request-schema'] || generateJsonSchema(method['sample-request']),
+                'response-schema': method['response-schema'] || generateJsonSchema(method['sample-response'])
+            };
+            // Remove old IDs
+            delete methodData['method-id'];
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["setDoc"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$config$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'namespace-account-method', newMethodId), methodData);
             loadAccountsAndMethods(namespaceId);
         } catch (error) {
             console.error('Error duplicating method:', error);
@@ -1387,45 +1412,6 @@ function NamespaceManagement() {
             console.error('Error loading templates:', error);
         }
     };
-    const handleCreateTemplate = async (namespace)=>{
-        try {
-            const templateId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2d$browser$2f$v4$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
-            const namespaceAccounts = accounts[namespace.id] ?? [];
-            const namespaceMethods = methods[namespace.id] ?? [];
-            const template = {
-                id: templateId,
-                name: `${namespace['namespace-name']} Template`,
-                template: {
-                    namespace: {
-                        'namespace-name': namespace['namespace-name'] || '',
-                        'namespace-url': namespace['namespace-url'] || '',
-                        'namespace-id': namespace.id
-                    },
-                    accounts: namespaceAccounts.map((account)=>({
-                            'namespace-account-name': account['namespace-account-name'] || '',
-                            'namespace-account-url-override': account['namespace-account-url-override'] || '',
-                            'namespace-account-header': account['namespace-account-header'] || [],
-                            'namespace-account-id': account.id,
-                            'namespace-id': account['namespace-id']
-                        })),
-                    methods: namespaceMethods.map((method)=>({
-                            'namespace-account-method-name': method['namespace-account-method-name'] || '',
-                            'namespace-account-method-type': method['namespace-account-method-type'] || __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$types$2f$namespace$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["HttpMethod"].GET,
-                            'namespace-account-method-url-override': method['namespace-account-method-url-override'] || '',
-                            'namespace-account-method-queryParams': method['namespace-account-method-queryParams'] || [],
-                            'namespace-account-method-id': method.id,
-                            'namespace-id': method['namespace-id']
-                        }))
-                }
-            };
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["setDoc"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$config$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'namespace-templates', templateId), template);
-            loadTemplates();
-            alert('Template created successfully!');
-        } catch (error) {
-            console.error('Error creating template:', error);
-            alert('Error creating template');
-        }
-    };
     const handleApplyTemplate = async (template, mapping)=>{
         try {
             let namespaceId = mapping.namespaceId;
@@ -1452,18 +1438,20 @@ function NamespaceManagement() {
                     });
                 }
             }
-            // Create or update methods
+            // Handle methods
             for (const templateMethod of template.template.methods){
                 const existingMethodId = mapping.methodMappings[templateMethod['namespace-account-method-name']];
+                const methodData = {
+                    ...templateMethod,
+                    'namespace-id': namespaceId,
+                    'request-schema': generateJsonSchema(templateMethod['sample-request']),
+                    'response-schema': generateJsonSchema(templateMethod['sample-response'])
+                };
                 if (existingMethodId) {
-                    await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["updateDoc"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$config$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'namespace-account-method', existingMethodId), templateMethod);
+                    await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["updateDoc"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$config$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'namespace-account-method', existingMethodId), methodData);
                 } else {
                     const methodId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$uuid$2f$dist$2f$esm$2d$browser$2f$v4$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__v4$3e$__["v4"])();
-                    await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["setDoc"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$config$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'namespace-account-method', methodId), {
-                        id: methodId,
-                        ...templateMethod,
-                        'namespace-id': namespaceId
-                    });
+                    await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["setDoc"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$firestore$2f$dist$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["doc"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$config$2f$firebase$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["db"], 'namespace-account-method', methodId), methodData);
                 }
             }
             loadNamespaces();
@@ -1473,6 +1461,153 @@ function NamespaceManagement() {
     };
     const setShowMapping = (template)=>{
         setSelectedTemplate(template);
+    };
+    const showPrettyJson = (title, data)=>{
+        setJsonModalData({
+            title,
+            data
+        }); // Show the complete response object
+        setShowJsonModal(true);
+    };
+    const generateJsonSchema = (data)=>{
+        if (data === null || data === undefined || data === '') {
+            return {
+                type: [
+                    'string',
+                    'number',
+                    'boolean'
+                ]
+            }; // Allow any primitive type for nullable fields
+        }
+        const type = Array.isArray(data) ? 'array' : typeof data;
+        switch(type){
+            case 'array':
+                if (!data.length) return {
+                    type: 'array'
+                };
+                // Collect all values for each field to determine possible types
+                const itemTypes = data.reduce((acc, item)=>{
+                    if (typeof item === 'object' && item !== null) {
+                        Object.entries(item).forEach(([key, value])=>{
+                            acc[key] = acc[key] || [];
+                            acc[key].push(value);
+                        });
+                    }
+                    return acc;
+                }, {});
+                // Generate schema with possible types for each field
+                const properties = {};
+                Object.entries(itemTypes).forEach(([key, values])=>{
+                    const types = new Set(values.map((v)=>v === null ? 'string' : typeof v));
+                    properties[key] = {
+                        type: Array.from(types)
+                    };
+                });
+                return {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties
+                    }
+                };
+            case 'object':
+                {
+                    const properties = {};
+                    Object.entries(data).forEach(([key, value])=>{
+                        properties[key] = generateJsonSchema(value);
+                    });
+                    return {
+                        type: 'object',
+                        properties
+                    };
+                }
+            default:
+                return {
+                    type
+                }; // Return actual type for non-null values
+        }
+    };
+    const validateValue = (value, schema, path = '', errors = [])=>{
+        try {
+            // Skip validation for null/empty values
+            if (value === null || value === '') return;
+            if (Array.isArray(schema.type)) {
+                const isValid = schema.type.some((type)=>{
+                    switch(type){
+                        case 'string':
+                            return typeof value === 'string';
+                        case 'number':
+                            return typeof value === 'number' && !isNaN(value);
+                        case 'boolean':
+                            return typeof value === 'boolean';
+                        case 'integer':
+                            return Number.isInteger(value);
+                        default:
+                            return typeof value === type;
+                    }
+                });
+                if (!isValid) {
+                    errors.push(`${path}: expected one of [${schema.type.join(', ')}], got ${typeof value}`);
+                }
+                return;
+            }
+            switch(schema.type){
+                case 'string':
+                    if (typeof value !== 'string') {
+                        errors.push(`${path}: expected string, got ${typeof value}`);
+                    }
+                    break;
+                case 'number':
+                    if (typeof value !== 'number' || isNaN(value)) {
+                        errors.push(`${path}: expected number, got ${typeof value}`);
+                    }
+                    break;
+                case 'boolean':
+                    if (typeof value !== 'boolean') {
+                        errors.push(`${path}: expected boolean, got ${typeof value}`);
+                    }
+                    break;
+                case 'integer':
+                    if (!Number.isInteger(value)) {
+                        errors.push(`${path}: expected integer, got ${typeof value}`);
+                    }
+                    break;
+                case 'object':
+                    if (typeof value === 'object' && !Array.isArray(value)) {
+                        Object.entries(schema.properties || {}).forEach(([key, propSchema])=>{
+                            if (key in value) {
+                                validateValue(value[key], propSchema, path ? `${path}.${key}` : key, errors);
+                            }
+                        });
+                    } else {
+                        errors.push(`${path}: expected object, got ${typeof value}`);
+                    }
+                    break;
+                case 'array':
+                    if (Array.isArray(value)) {
+                        value.forEach((item, index)=>{
+                            if (schema.items) {
+                                validateValue(item, schema.items, `${path}[${index}]`, errors);
+                            }
+                        });
+                    } else {
+                        errors.push(`${path}: expected array, got ${typeof value}`);
+                    }
+                    break;
+            }
+        } catch (e) {
+            errors.push(`Error validating ${path}: ${e}`);
+        }
+    };
+    const validateAgainstSchema = (schema, data)=>{
+        const errors = [];
+        try {
+            const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+            validateValue(parsedData, schema, '', errors);
+        } catch (e) {
+            errors.push('Invalid JSON format');
+        }
+        return errors;
     };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "p-6",
@@ -1486,7 +1621,7 @@ function NamespaceManagement() {
                 onTabChange: setActiveTab
             }, void 0, false, {
                 fileName: "[project]/app/namespace-management/page.tsx",
-                lineNumber: 382,
+                lineNumber: 514,
                 columnNumber: 7
             }, this),
             activeTab === 'Namespaces' ? // Namespaces View
@@ -1500,7 +1635,7 @@ function NamespaceManagement() {
                                 children: "Namespace Management"
                             }, void 0, false, {
                                 fileName: "[project]/app/namespace-management/page.tsx",
-                                lineNumber: 392,
+                                lineNumber: 524,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1509,20 +1644,20 @@ function NamespaceManagement() {
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiPlus"], {}, void 0, false, {
                                         fileName: "[project]/app/namespace-management/page.tsx",
-                                        lineNumber: 397,
+                                        lineNumber: 529,
                                         columnNumber: 15
                                     }, this),
                                     " Add Namespace"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/namespace-management/page.tsx",
-                                lineNumber: 393,
+                                lineNumber: 525,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/namespace-management/page.tsx",
-                        lineNumber: 391,
+                        lineNumber: 523,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1534,22 +1669,6 @@ function NamespaceManagement() {
                                 onToggle: ()=>setExpandedId(expandedId === namespace.id ? null : namespace.id),
                                 onDelete: ()=>handleDeleteNamespace(namespace.id),
                                 onDuplicate: ()=>handleDuplicateNamespace(namespace),
-                                actions: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                    onClick: ()=>handleCreateTemplate(namespace),
-                                    className: "text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiSave"], {}, void 0, false, {
-                                            fileName: "[project]/app/namespace-management/page.tsx",
-                                            lineNumber: 416,
-                                            columnNumber: 21
-                                        }, void 0),
-                                        " Create Template"
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/app/namespace-management/page.tsx",
-                                    lineNumber: 412,
-                                    columnNumber: 19
-                                }, void 0),
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "space-y-6",
                                     children: [
@@ -1560,7 +1679,7 @@ function NamespaceManagement() {
                                                     children: "Namespace Details"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                    lineNumber: 423,
+                                                    lineNumber: 555,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$shared$2f$EditableTable$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1576,13 +1695,13 @@ function NamespaceManagement() {
                                                     ]
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                    lineNumber: 424,
+                                                    lineNumber: 556,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/namespace-management/page.tsx",
-                                            lineNumber: 422,
+                                            lineNumber: 554,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1595,7 +1714,7 @@ function NamespaceManagement() {
                                                             children: "Accounts"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/namespace-management/page.tsx",
-                                                            lineNumber: 438,
+                                                            lineNumber: 570,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1604,20 +1723,20 @@ function NamespaceManagement() {
                                                             children: [
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiPlus"], {}, void 0, false, {
                                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                                    lineNumber: 443,
+                                                                    lineNumber: 575,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 " Add Account"
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/namespace-management/page.tsx",
-                                                            lineNumber: 439,
+                                                            lineNumber: 571,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                    lineNumber: 437,
+                                                    lineNumber: 569,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1642,7 +1761,7 @@ function NamespaceManagement() {
                                                                     ]
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                                    lineNumber: 457,
+                                                                    lineNumber: 589,
                                                                     columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$shared$2f$KeyValueTable$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1652,24 +1771,24 @@ function NamespaceManagement() {
                                                                     allowJsonValue: false
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                                    lineNumber: 463,
+                                                                    lineNumber: 595,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             ]
                                                         }, account.id, true, {
                                                             fileName: "[project]/app/namespace-management/page.tsx",
-                                                            lineNumber: 448,
+                                                            lineNumber: 580,
                                                             columnNumber: 25
                                                         }, this))
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                    lineNumber: 446,
+                                                    lineNumber: 578,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/namespace-management/page.tsx",
-                                            lineNumber: 436,
+                                            lineNumber: 568,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1682,7 +1801,7 @@ function NamespaceManagement() {
                                                             children: "Methods"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/namespace-management/page.tsx",
-                                                            lineNumber: 477,
+                                                            lineNumber: 609,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1691,20 +1810,20 @@ function NamespaceManagement() {
                                                             children: [
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiPlus"], {}, void 0, false, {
                                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                                    lineNumber: 482,
+                                                                    lineNumber: 614,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 " Add Method"
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/namespace-management/page.tsx",
-                                                            lineNumber: 478,
+                                                            lineNumber: 610,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                    lineNumber: 476,
+                                                    lineNumber: 608,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1712,76 +1831,187 @@ function NamespaceManagement() {
                                                     children: methods[namespace.id]?.map((method)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$shared$2f$ExpandableCard$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                                                             title: method['namespace-account-method-name'],
                                                             subtitle: method['namespace-account-method-url-override'],
-                                                            isExpanded: expandedMethodId === method.id,
-                                                            onToggle: ()=>setExpandedMethodId(expandedMethodId === method.id ? null : method.id),
-                                                            onDelete: ()=>handleDeleteMethod(method.id, namespace.id),
+                                                            isExpanded: expandedMethodId === method['method-id'],
+                                                            onToggle: ()=>setExpandedMethodId(expandedMethodId === method['method-id'] ? null : method['method-id'] || null),
+                                                            onDelete: ()=>method['method-id'] && handleDeleteMethod(method['method-id'], namespace.id),
                                                             onDuplicate: ()=>handleDuplicateMethod(method, namespace.id),
                                                             children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "grid grid-cols-2 gap-4 mb-4",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                            children: [
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                                    className: "text-sm font-medium text-gray-600",
+                                                                                    children: "Sample Request"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                    lineNumber: 632,
+                                                                                    columnNumber: 31
+                                                                                }, this),
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                    className: "mt-1 flex items-center gap-2",
+                                                                                    children: [
+                                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                            className: "text-gray-500 text-sm",
+                                                                                            children: "[Sample Data Available]"
+                                                                                        }, void 0, false, {
+                                                                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                            lineNumber: 634,
+                                                                                            columnNumber: 33
+                                                                                        }, this),
+                                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                            onClick: ()=>showPrettyJson('Sample Request', method['sample-request']),
+                                                                                            className: "text-blue-600 hover:text-blue-800 text-sm",
+                                                                                            children: "View JSON"
+                                                                                        }, void 0, false, {
+                                                                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                            lineNumber: 635,
+                                                                                            columnNumber: 33
+                                                                                        }, this),
+                                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                            onClick: ()=>showPrettyJson('Request Schema', method['request-schema'] || generateJsonSchema(method['sample-request'])),
+                                                                                            className: "text-blue-600 hover:text-blue-800 text-sm",
+                                                                                            children: "View Schema"
+                                                                                        }, void 0, false, {
+                                                                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                            lineNumber: 641,
+                                                                                            columnNumber: 33
+                                                                                        }, this)
+                                                                                    ]
+                                                                                }, void 0, true, {
+                                                                                    fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                    lineNumber: 633,
+                                                                                    columnNumber: 31
+                                                                                }, this)
+                                                                            ]
+                                                                        }, void 0, true, {
+                                                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                                                            lineNumber: 631,
+                                                                            columnNumber: 29
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                            children: [
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                                    className: "text-sm font-medium text-gray-600",
+                                                                                    children: "Sample Response"
+                                                                                }, void 0, false, {
+                                                                                    fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                    lineNumber: 650,
+                                                                                    columnNumber: 31
+                                                                                }, this),
+                                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                    className: "mt-1 flex items-center gap-2",
+                                                                                    children: [
+                                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                            className: "text-gray-500 text-sm",
+                                                                                            children: "[Sample Data Available]"
+                                                                                        }, void 0, false, {
+                                                                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                            lineNumber: 652,
+                                                                                            columnNumber: 33
+                                                                                        }, this),
+                                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                            onClick: ()=>showPrettyJson('Sample Response', method['sample-response']),
+                                                                                            className: "text-blue-600 hover:text-blue-800 text-sm",
+                                                                                            children: "View JSON"
+                                                                                        }, void 0, false, {
+                                                                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                            lineNumber: 653,
+                                                                                            columnNumber: 33
+                                                                                        }, this),
+                                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                            onClick: ()=>showPrettyJson('Response Schema', generateJsonSchema(method['sample-response'])),
+                                                                                            className: "text-blue-600 hover:text-blue-800 text-sm",
+                                                                                            children: "View Schema"
+                                                                                        }, void 0, false, {
+                                                                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                            lineNumber: 659,
+                                                                                            columnNumber: 33
+                                                                                        }, this)
+                                                                                    ]
+                                                                                }, void 0, true, {
+                                                                                    fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                    lineNumber: 651,
+                                                                                    columnNumber: 31
+                                                                                }, this)
+                                                                            ]
+                                                                        }, void 0, true, {
+                                                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                                                            lineNumber: 649,
+                                                                            columnNumber: 29
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/app/namespace-management/page.tsx",
+                                                                    lineNumber: 630,
+                                                                    columnNumber: 27
+                                                                }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$shared$2f$EditableTable$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                                                                     data: method,
-                                                                    onUpdate: (key, value)=>handleUpdateMethod(method.id, namespace.id, key, value),
+                                                                    onUpdate: (key, value)=>handleUpdateMethod(method['method-id'], namespace.id, key, value),
                                                                     excludeKeys: [
-                                                                        'id',
                                                                         'namespace-account-method-queryParams'
                                                                     ],
                                                                     readOnlyKeys: [
-                                                                        'namespace-id'
+                                                                        'namespace-id',
+                                                                        'method-id'
                                                                     ],
                                                                     enumFields: {
                                                                         'namespace-account-method-type': __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$types$2f$namespace$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["HttpMethod"]
                                                                     }
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                                    lineNumber: 496,
+                                                                    lineNumber: 668,
                                                                     columnNumber: 27
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$shared$2f$KeyValueTable$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
-                                                                    data: method['namespace-account-method-queryParams'],
-                                                                    onUpdate: (params)=>handleUpdateQueryParams(method.id, namespace.id, params),
+                                                                    data: method['namespace-account-method-queryParams'] || [],
+                                                                    onUpdate: (params)=>handleUpdateQueryParams(method['method-id'], namespace.id, params),
                                                                     title: "Query Parameters",
                                                                     allowJsonValue: false
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                                    lineNumber: 505,
+                                                                    lineNumber: 677,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             ]
-                                                        }, method.id, true, {
+                                                        }, method['method-id'], true, {
                                                             fileName: "[project]/app/namespace-management/page.tsx",
-                                                            lineNumber: 487,
+                                                            lineNumber: 619,
                                                             columnNumber: 25
                                                         }, this))
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                    lineNumber: 485,
+                                                    lineNumber: 617,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/namespace-management/page.tsx",
-                                            lineNumber: 475,
+                                            lineNumber: 607,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                    lineNumber: 420,
+                                    lineNumber: 552,
                                     columnNumber: 17
                                 }, this)
                             }, namespace.id, false, {
                                 fileName: "[project]/app/namespace-management/page.tsx",
-                                lineNumber: 403,
+                                lineNumber: 535,
                                 columnNumber: 15
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/app/namespace-management/page.tsx",
-                        lineNumber: 401,
+                        lineNumber: 533,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/namespace-management/page.tsx",
-                lineNumber: 390,
+                lineNumber: 522,
                 columnNumber: 9
             }, this) : // Templates View
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1793,12 +2023,12 @@ function NamespaceManagement() {
                             children: "Template Management"
                         }, void 0, false, {
                             fileName: "[project]/app/namespace-management/page.tsx",
-                            lineNumber: 524,
+                            lineNumber: 696,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/app/namespace-management/page.tsx",
-                        lineNumber: 523,
+                        lineNumber: 695,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1819,7 +2049,7 @@ function NamespaceManagement() {
                                                     children: "Namespace"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                    lineNumber: 540,
+                                                    lineNumber: 712,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$shared$2f$EditableTable$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1828,13 +2058,13 @@ function NamespaceManagement() {
                                                     readOnly: true
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                    lineNumber: 541,
+                                                    lineNumber: 713,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/namespace-management/page.tsx",
-                                            lineNumber: 539,
+                                            lineNumber: 711,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1844,7 +2074,7 @@ function NamespaceManagement() {
                                                     children: "Accounts"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                    lineNumber: 550,
+                                                    lineNumber: 722,
                                                     columnNumber: 21
                                                 }, this),
                                                 template.template.accounts.map((account, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1856,7 +2086,7 @@ function NamespaceManagement() {
                                                                 readOnly: true
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/namespace-management/page.tsx",
-                                                                lineNumber: 553,
+                                                                lineNumber: 725,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$shared$2f$KeyValueTable$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1866,19 +2096,19 @@ function NamespaceManagement() {
                                                                 readOnly: true
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/namespace-management/page.tsx",
-                                                                lineNumber: 558,
+                                                                lineNumber: 730,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, index, true, {
                                                         fileName: "[project]/app/namespace-management/page.tsx",
-                                                        lineNumber: 552,
+                                                        lineNumber: 724,
                                                         columnNumber: 23
                                                     }, this))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/namespace-management/page.tsx",
-                                            lineNumber: 549,
+                                            lineNumber: 721,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1888,63 +2118,174 @@ function NamespaceManagement() {
                                                     children: "Methods"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                                    lineNumber: 570,
+                                                    lineNumber: 742,
                                                     columnNumber: 21
                                                 }, this),
                                                 template.template.methods.map((method, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                         className: "mb-4",
                                                         children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "grid grid-cols-2 gap-4 mb-4",
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                                className: "text-sm font-medium text-gray-600",
+                                                                                children: "Sample Request"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                lineNumber: 747,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                className: "mt-1 flex items-center gap-2",
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                        className: "text-gray-500 text-sm",
+                                                                                        children: "[Sample Data Available]"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                        lineNumber: 749,
+                                                                                        columnNumber: 31
+                                                                                    }, this),
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                        onClick: ()=>showPrettyJson('Sample Request', method['sample-request']),
+                                                                                        className: "text-blue-600 hover:text-blue-800 text-sm",
+                                                                                        children: "View JSON"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                        lineNumber: 750,
+                                                                                        columnNumber: 31
+                                                                                    }, this),
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                        onClick: ()=>showPrettyJson('Request Schema', method['request-schema'] || generateJsonSchema(method['sample-request'])),
+                                                                                        className: "text-blue-600 hover:text-blue-800 text-sm",
+                                                                                        children: "View Schema"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                        lineNumber: 756,
+                                                                                        columnNumber: 31
+                                                                                    }, this)
+                                                                                ]
+                                                                            }, void 0, true, {
+                                                                                fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                lineNumber: 748,
+                                                                                columnNumber: 29
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "[project]/app/namespace-management/page.tsx",
+                                                                        lineNumber: 746,
+                                                                        columnNumber: 27
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                                                className: "text-sm font-medium text-gray-600",
+                                                                                children: "Sample Response"
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                lineNumber: 765,
+                                                                                columnNumber: 29
+                                                                            }, this),
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                                className: "mt-1 flex items-center gap-2",
+                                                                                children: [
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                                        className: "text-gray-500 text-sm",
+                                                                                        children: "[Sample Data Available]"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                        lineNumber: 767,
+                                                                                        columnNumber: 31
+                                                                                    }, this),
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                        onClick: ()=>showPrettyJson('Sample Response', method['sample-response']),
+                                                                                        className: "text-blue-600 hover:text-blue-800 text-sm",
+                                                                                        children: "View JSON"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                        lineNumber: 768,
+                                                                                        columnNumber: 31
+                                                                                    }, this),
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                                                        onClick: ()=>showPrettyJson('Response Schema', generateJsonSchema(method['sample-response'])),
+                                                                                        className: "text-blue-600 hover:text-blue-800 text-sm",
+                                                                                        children: "View Schema"
+                                                                                    }, void 0, false, {
+                                                                                        fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                        lineNumber: 774,
+                                                                                        columnNumber: 31
+                                                                                    }, this)
+                                                                                ]
+                                                                            }, void 0, true, {
+                                                                                fileName: "[project]/app/namespace-management/page.tsx",
+                                                                                lineNumber: 766,
+                                                                                columnNumber: 29
+                                                                            }, this)
+                                                                        ]
+                                                                    }, void 0, true, {
+                                                                        fileName: "[project]/app/namespace-management/page.tsx",
+                                                                        lineNumber: 764,
+                                                                        columnNumber: 27
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/app/namespace-management/page.tsx",
+                                                                lineNumber: 745,
+                                                                columnNumber: 25
+                                                            }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$shared$2f$EditableTable$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                                                                 data: method,
                                                                 onUpdate: async ()=>{},
                                                                 readOnly: true
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/namespace-management/page.tsx",
-                                                                lineNumber: 573,
+                                                                lineNumber: 783,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$shared$2f$KeyValueTable$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
-                                                                data: method['namespace-account-method-queryParams'],
+                                                                data: method['namespace-account-method-queryParams'] || [],
                                                                 onUpdate: async ()=>{},
                                                                 title: "Query Parameters",
                                                                 readOnly: true
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/namespace-management/page.tsx",
-                                                                lineNumber: 578,
+                                                                lineNumber: 788,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, index, true, {
                                                         fileName: "[project]/app/namespace-management/page.tsx",
-                                                        lineNumber: 572,
+                                                        lineNumber: 744,
                                                         columnNumber: 23
                                                     }, this))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/namespace-management/page.tsx",
-                                            lineNumber: 569,
+                                            lineNumber: 741,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/namespace-management/page.tsx",
-                                    lineNumber: 537,
+                                    lineNumber: 709,
                                     columnNumber: 17
                                 }, this)
                             }, template.id, false, {
                                 fileName: "[project]/app/namespace-management/page.tsx",
-                                lineNumber: 529,
+                                lineNumber: 701,
                                 columnNumber: 15
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/app/namespace-management/page.tsx",
-                        lineNumber: 527,
+                        lineNumber: 699,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/namespace-management/page.tsx",
-                lineNumber: 522,
+                lineNumber: 694,
                 columnNumber: 9
             }, this),
             selectedTemplate && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$namespace$2f$TemplateMapping$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1955,17 +2296,187 @@ function NamespaceManagement() {
                 onMapComplete: handleApplyTemplate
             }, void 0, false, {
                 fileName: "[project]/app/namespace-management/page.tsx",
-                lineNumber: 596,
+                lineNumber: 806,
+                columnNumber: 9
+            }, this),
+            showJsonModal && jsonModalData && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50",
+                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                    className: "bg-white rounded-lg shadow-xl w-[800px] max-h-[80vh] overflow-hidden",
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "px-4 py-3 border-b flex justify-between items-center",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
+                                    className: "font-medium",
+                                    children: jsonModalData.title
+                                }, void 0, false, {
+                                    fileName: "[project]/app/namespace-management/page.tsx",
+                                    lineNumber: 820,
+                                    columnNumber: 15
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                    onClick: ()=>setShowJsonModal(false),
+                                    className: "text-gray-500 hover:text-gray-700",
+                                    children: "✕"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/namespace-management/page.tsx",
+                                    lineNumber: 821,
+                                    columnNumber: 15
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/app/namespace-management/page.tsx",
+                            lineNumber: 819,
+                            columnNumber: 13
+                        }, this),
+                        jsonModalData.title.includes('Schema') ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "grid grid-rows-2 gap-4 h-[calc(80vh-60px)]",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "p-4 overflow-auto border-b",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
+                                            className: "font-medium mb-2",
+                                            children: "JSON Schema"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                            lineNumber: 833,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("pre", {
+                                            className: "bg-gray-50 p-4 rounded text-sm",
+                                            children: JSON.stringify(jsonModalData.data, null, 2)
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                            lineNumber: 834,
+                                            columnNumber: 19
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/app/namespace-management/page.tsx",
+                                    lineNumber: 832,
+                                    columnNumber: 17
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "p-4",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
+                                            className: "font-medium mb-2",
+                                            children: "Validate JSON"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                            lineNumber: 841,
+                                            columnNumber: 19
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "space-y-4",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
+                                                    value: schemaTestData,
+                                                    onChange: (e)=>{
+                                                        setSchemaTestData(e.target.value);
+                                                        setSchemaValidationErrors(validateAgainstSchema(jsonModalData.data, e.target.value));
+                                                    },
+                                                    placeholder: `Example valid JSON:
+{
+  "orders": [
+    {
+      "note": null,
+      "taxes_included": false,
+      "confirmed": true
+    }
+  ]
+}`,
+                                                    className: "w-full h-32 p-2 border rounded font-mono text-sm"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/namespace-management/page.tsx",
+                                                    lineNumber: 843,
+                                                    columnNumber: 21
+                                                }, this),
+                                                schemaValidationErrors.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "bg-red-50 p-3 rounded",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h5", {
+                                                            className: "text-red-700 font-medium mb-1",
+                                                            children: "Validation Errors:"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                                            lineNumber: 864,
+                                                            columnNumber: 25
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
+                                                            className: "text-red-600 text-sm list-disc list-inside",
+                                                            children: schemaValidationErrors.map((error, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("li", {
+                                                                    children: error
+                                                                }, i, false, {
+                                                                    fileName: "[project]/app/namespace-management/page.tsx",
+                                                                    lineNumber: 867,
+                                                                    columnNumber: 29
+                                                                }, this))
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                                            lineNumber: 865,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/namespace-management/page.tsx",
+                                                    lineNumber: 863,
+                                                    columnNumber: 23
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/app/namespace-management/page.tsx",
+                                            lineNumber: 842,
+                                            columnNumber: 19
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/app/namespace-management/page.tsx",
+                                    lineNumber: 840,
+                                    columnNumber: 17
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/app/namespace-management/page.tsx",
+                            lineNumber: 830,
+                            columnNumber: 15
+                        }, this) : // Regular JSON viewer
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "p-4 overflow-auto max-h-[calc(80vh-60px)]",
+                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("pre", {
+                                className: "bg-gray-50 p-4 rounded text-sm",
+                                children: jsonModalData.data ? JSON.stringify(jsonModalData.data, null, 2) : 'No data available'
+                            }, void 0, false, {
+                                fileName: "[project]/app/namespace-management/page.tsx",
+                                lineNumber: 878,
+                                columnNumber: 17
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "[project]/app/namespace-management/page.tsx",
+                            lineNumber: 877,
+                            columnNumber: 15
+                        }, this)
+                    ]
+                }, void 0, true, {
+                    fileName: "[project]/app/namespace-management/page.tsx",
+                    lineNumber: 818,
+                    columnNumber: 11
+                }, this)
+            }, void 0, false, {
+                fileName: "[project]/app/namespace-management/page.tsx",
+                lineNumber: 817,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/namespace-management/page.tsx",
-        lineNumber: 381,
+        lineNumber: 513,
         columnNumber: 5
     }, this);
 }
-_s(NamespaceManagement, "5d4WcLrFajvOu0NE4FbSJOV2IPw=");
+_s(NamespaceManagement, "+Vh9OuWz8MjZrKre8CtljRP0Ecw=");
 _c = NamespaceManagement;
 var _c;
 __turbopack_refresh__.register(_c, "NamespaceManagement");

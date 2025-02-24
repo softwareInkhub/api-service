@@ -3,18 +3,34 @@ import { FiChevronRight, FiChevronDown } from 'react-icons/fi';
 
 interface JsonTreeViewProps {
   data: any;
+  expandLevel?: number;
   level?: number;
   path?: (string | number)[];
   startLine?: number;
+  className?: string;
 }
 
 export default function JsonTreeView({ 
   data, 
+  expandLevel = 5,
   level = 0,
   path = [],
-  startLine = 1
+  startLine = 1,
+  className
 }: JsonTreeViewProps) {
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
+    const expanded = new Set<string>();
+    const expandPaths = (obj: any, currentPath: string = '') => {
+      if (typeof obj === 'object' && obj !== null) {
+        expanded.add(currentPath);
+        Object.keys(obj).forEach(key => {
+          expandPaths(obj[key], currentPath ? `${currentPath}.${key}` : key);
+        });
+      }
+    };
+    expandPaths(data);
+    return expanded;
+  });
   const [currentLine, setCurrentLine] = useState(startLine);
   const indent = level * 20;
 
@@ -105,6 +121,7 @@ export default function JsonTreeView({
                   </span>
                   <JsonTreeView
                     data={value}
+                    expandLevel={expandLevel}
                     level={level + 1}
                     path={[...path, key]}
                     startLine={currentLine + index + 1}

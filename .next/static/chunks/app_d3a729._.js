@@ -23,27 +23,27 @@ function Sidebar() {
     const pathname = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["usePathname"])();
     const navItems = [
         {
-            name: 'API Tester',
+            name: 'Activity Service',
+            href: '/activity-tester',
+            icon: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiLayers"], {}, void 0, false, {
+                fileName: "[project]/app/components/Sidebar.tsx",
+                lineNumber: 14,
+                columnNumber: 13
+            }, this),
+            description: 'Test activities'
+        },
+        {
+            name: 'API Service',
             href: '/api-tester',
             icon: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiCode"], {}, void 0, false, {
                 fileName: "[project]/app/components/Sidebar.tsx",
-                lineNumber: 14,
+                lineNumber: 20,
                 columnNumber: 13
             }, this),
             description: 'Test API endpoints'
         },
         {
-            name: 'Templates',
-            href: '/client-method-templates',
-            icon: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiBox"], {}, void 0, false, {
-                fileName: "[project]/app/components/Sidebar.tsx",
-                lineNumber: 20,
-                columnNumber: 13
-            }, this),
-            description: 'Saved API templates'
-        },
-        {
-            name: 'Namespace',
+            name: 'Namespace Service',
             href: '/namespace-management',
             icon: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiDatabase"], {}, void 0, false, {
                 fileName: "[project]/app/components/Sidebar.tsx",
@@ -53,14 +53,14 @@ function Sidebar() {
             description: 'Manage API namespaces'
         },
         {
-            name: 'Activity Tester',
-            href: '/activity-tester',
-            icon: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiLayers"], {}, void 0, false, {
+            name: 'Schema Service',
+            href: '/schema-service',
+            icon: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiGrid"], {}, void 0, false, {
                 fileName: "[project]/app/components/Sidebar.tsx",
                 lineNumber: 32,
                 columnNumber: 13
             }, this),
-            description: 'Test activities'
+            description: 'Manage data schemas'
         }
     ];
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -73,12 +73,12 @@ function Sidebar() {
                     children: "API Tools"
                 }, void 0, false, {
                     fileName: "[project]/app/components/Sidebar.tsx",
-                    lineNumber: 41,
+                    lineNumber: 43,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/components/Sidebar.tsx",
-                lineNumber: 40,
+                lineNumber: 42,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("nav", {
@@ -96,7 +96,7 @@ function Sidebar() {
                                     children: item.icon
                                 }, void 0, false, {
                                     fileName: "[project]/app/components/Sidebar.tsx",
-                                    lineNumber: 60,
+                                    lineNumber: 62,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -106,7 +106,7 @@ function Sidebar() {
                                             children: item.name
                                         }, void 0, false, {
                                             fileName: "[project]/app/components/Sidebar.tsx",
-                                            lineNumber: 64,
+                                            lineNumber: 66,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -114,30 +114,30 @@ function Sidebar() {
                                             children: item.description
                                         }, void 0, false, {
                                             fileName: "[project]/app/components/Sidebar.tsx",
-                                            lineNumber: 65,
+                                            lineNumber: 67,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/components/Sidebar.tsx",
-                                    lineNumber: 63,
+                                    lineNumber: 65,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, item.href, true, {
                             fileName: "[project]/app/components/Sidebar.tsx",
-                            lineNumber: 51,
+                            lineNumber: 53,
                             columnNumber: 15
                         }, this);
                     })
                 }, void 0, false, {
                     fileName: "[project]/app/components/Sidebar.tsx",
-                    lineNumber: 46,
+                    lineNumber: 48,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/components/Sidebar.tsx",
-                lineNumber: 45,
+                lineNumber: 47,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -147,18 +147,18 @@ function Sidebar() {
                     children: "Version 1.0.0"
                 }, void 0, false, {
                     fileName: "[project]/app/components/Sidebar.tsx",
-                    lineNumber: 79,
+                    lineNumber: 81,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/components/Sidebar.tsx",
-                lineNumber: 78,
+                lineNumber: 80,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/components/Sidebar.tsx",
-        lineNumber: 38,
+        lineNumber: 40,
         columnNumber: 5
     }, this);
 }

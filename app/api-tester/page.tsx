@@ -1,17 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { FiSend, FiPlus, FiTrash2, FiClock, FiSearch, FiMaximize2, FiMinimize2, FiDownload } from 'react-icons/fi';
-import dynamic from 'next/dynamic';
-import type { default as JsonEditorType } from 'react-json-editor-ajrm';
+import { FiSend, FiPlus, FiTrash2, FiClock, FiSearch, FiMaximize2, FiMinimize2, FiDownload, FiRefreshCw, FiCopy } from 'react-icons/fi';
 import JsonTreeView from '../components/JsonTreeView';
-import SaveTemplateModal from '../components/SaveTemplateModal';
-import { ClientMethodTemplate } from '../types/ClientMethodTemplate';
-import { templateService } from '../services/templateService';
-import CreateTemplateButton from '../components/shared/CreateTemplateButton';
-import ApiFormHeader from '../components/api/ApiFormHeader';
 import { NamespaceMethod } from '../types/namespace';
 import { namespaceService } from '../services/namespaceService';
+import { Namespace, NamespaceAccount } from '../types/namespace';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 // Create a type for the component props
 interface JsonEditorProps {
@@ -30,10 +26,6 @@ interface JsonEditorProps {
   modifyErrorText?: (error: string) => string;
 }
 
-// Update the dynamic import
-const JsonEditor = dynamic<JsonEditorProps>(() =>
-  import('react-json-editor-ajrm').then(mod => mod.default)
-  , { ssr: false });
 
 interface KeyValuePair {
   key: string;
@@ -87,15 +79,6 @@ const locale: JsonEditorLocale = {
   escape: "Escape"
 };
 
-// Add this helper function at the top level
-const formatJson = (json: any): string => {
-  try {
-    return JSON.stringify(json, null, 2);
-  } catch (e) {
-    return '';
-  }
-};
-
 // Add this helper function
 const downloadJson = (data: any, filename: string) => {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -110,6 +93,18 @@ const downloadJson = (data: any, filename: string) => {
 // Add these type definitions at the top
 type RequestTab = 'params' | 'headers' | 'body';
 type ResponseTab = 'body' | 'headers';
+
+interface ApiExecution {
+  uuid: string;
+  'execution-status': string;
+  'execution-start-time': string;
+  'execution-time-taken': number;
+  'execution-response-size': number;
+  'response-status': number;
+  'pagination-page': number;
+  url: string;
+  method: string;
+}
 
 export default function ApiTester() {
   const [activeTab, setActiveTab] = useState<RequestTab>('params');
@@ -127,7 +122,21 @@ export default function ApiTester() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [requestFormat, setRequestFormat] = useState<'json' | 'form'>('json');
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
-  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<NamespaceMethod | null>(null);
+  const [selectedNamespace, setSelectedNamespace] = useState<Namespace | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<NamespaceAccount | null>(null);
+  const [loopLoading, setLoopLoading] = useState(false);
+  const [iterationCount, setIterationCount] = useState<string>('');
+  const [executions, setExecutions] = useState<ApiExecution[]>([]);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [executionStartTime, setExecutionStartTime] = useState<number | null>(null);
+  const [currentExecutionId, setCurrentExecutionId] = useState<string | null>(null);
+  const [namespaces, setNamespaces] = useState<Namespace[]>([]);
+  const [accounts, setAccounts] = useState<NamespaceAccount[]>([]);
+  const [methods, setMethods] = useState<NamespaceMethod[]>([]);
+  const [selectedNamespaceId, setSelectedNamespaceId] = useState<string>('');
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  const [selectedMethodId, setSelectedMethodId] = useState<string>('');
 
   // Load history from localStorage on mount
   useEffect(() => {
@@ -157,33 +166,20 @@ export default function ApiTester() {
     }
   }, [url, history]);
 
-  // Add to existing useEffect or create new one
   useEffect(() => {
-    // Check for pending template application
-    const pendingTemplate = localStorage.getItem('pendingTemplateApplication');
-    if (pendingTemplate) {
-      const template = JSON.parse(pendingTemplate);
-      
-      // Apply template data
-      setMethod(template.method);
-      setUrl(template.url);
-      setQueryParams(template.queryParams.length ? template.queryParams : [{ key: '', value: '' }]);
-      setHeaders(template.headers.length ? template.headers : [{ key: '', value: '' }]);
-      
-      if (template.requestBody) {
-        setRequestBody(template.requestBody);
-        setRequestFormat(Array.isArray(template.requestBody) || typeof template.requestBody === 'object' ? 'json' : 'form');
-        setActiveTab('body');
-      } else if (template.queryParams.some((p: KeyValuePair) => p.key)) {
-        setActiveTab('params');
-      } else if (template.headers.some((h: KeyValuePair) => h.key)) {
-        setActiveTab('headers');
-      }
+    loadNamespaces();
+  }, []);
 
-      // Clear the pending template
-      localStorage.removeItem('pendingTemplateApplication');
+  useEffect(() => {
+    if (selectedNamespaceId) {
+      loadAccountsAndMethods(selectedNamespaceId);
+    } else {
+      setAccounts([]);
+      setMethods([]);
+      setSelectedAccountId('');
+      setSelectedMethodId('');
     }
-  }, []); // Run once on mount
+  }, [selectedNamespaceId]);
 
   const handleAddParam = (type: 'query' | 'header') => {
     if (type === 'query') {
@@ -220,104 +216,130 @@ export default function ApiTester() {
 
   const handleSend = async () => {
     try {
-      console.group('API Request');
+      console.log('[Request] Preparing to send request');
       
-      // Log request details
-      console.log('Request URL:', url);
-      console.log('Method:', method);
-      console.log('Query Parameters:', queryParams.filter(p => p.key));
-      console.log('Headers:', headers.filter(h => h.key));
-      if (method !== 'GET') {
-        console.log('Request Body:', requestBody);
+      // Validate required selections first
+      if (!selectedMethod) {
+        console.error('[Error] No method selected');
+        setResponse({
+          status: 400,
+          data: { error: 'Please select a method before sending request' },
+          headers: {},
+          time: 0
+        });
+        return; // Exit early
       }
 
       setLoading(true);
       const startTime = performance.now();
+      console.log('[Request] Current selected method:', selectedMethod);
+      
+      // Now we know selectedMethod exists
+      const methodId = selectedMethod['method-id'];
+      console.log('[Request] Using method ID:', methodId);
 
-      // Format request body based on method
-      let formattedBody;
-      if (method !== 'GET') {
-        try {
-          // If requestBody is string, parse it as JSON
-          formattedBody = typeof requestBody === 'string' 
-            ? JSON.parse(requestBody)
-            : requestBody;
-        } catch (error) {
-          console.error('Invalid JSON in request body:', error);
-          throw new Error('Invalid JSON in request body');
-        }
+      // Build final URL with query parameters
+      let finalUrl = url;
+      const validQueryParams = queryParams.filter(p => p.key && p.value);
+      if (validQueryParams.length > 0) {
+        const params = new URLSearchParams();
+        validQueryParams.forEach(p => params.append(p.key, p.value));
+        finalUrl += `${finalUrl.includes('?') ? '&' : '?'}${params.toString()}`;
       }
 
-      // Send request through our backend proxy
+      // Prepare headers
+      const validHeaders = headers.filter(h => h.key && h.value);
+      const headerObj = Object.fromEntries(validHeaders.map(h => [h.key, h.value]));
+
+      // Prepare request object
+      const apiRequest = {
+        namespaceMethodId: methodId,
+        namespaceId: selectedNamespace?.id || '',
+        namespaceAccountId: selectedAccount?.id || '',
+        method,
+        url: finalUrl,
+        queryParams: queryParams.filter(p => p.key).reduce((acc, { key, value }) => {
+          acc[key] = value;
+          return acc;
+        }, {} as Record<string, string>),
+        headers: headerObj,
+        body: requestBody
+      };
+
+      console.log('[Request] Request configuration:', apiRequest);
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/openApi/proxy`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          method,
-          url,
-          queryParams: queryParams.filter(p => p.key).reduce((acc, { key, value }) => {
-            acc[key] = value;
-            return acc;
-          }, {} as Record<string, string>),
-          headers: headers.filter(h => h.key).reduce((acc, { key, value }) => {
-            acc[key] = value;
-            return acc;
-          }, {} as Record<string, string>),
-          body: formattedBody // Use formatted body
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(apiRequest)
       });
+
+      console.log('[Response] Status:', response.status);
+      const responseData = await response.json();
+      console.log('[Response] Data:', responseData);
 
       const endTime = performance.now();
       const responseTime = Math.round(endTime - startTime);
+      console.log('[Response] Time taken:', responseTime, 'ms');
 
-      const responseData = await response.json();
-
-      console.group('API Response');
-      console.log('Status:', responseData.status);
-      console.log('Time:', `${responseTime}ms`);
-      console.log('Size:', JSON.stringify(responseData.data).length, 'bytes');
-      console.log('Headers:', responseData.headers);
-      console.log('Body:', responseData.data);
-      console.groupEnd();
-
+      // Update response state
       setResponse({
-        status: responseData.status,
-        data: responseData.data,
-        headers: responseData.headers,
-        time: `${responseTime}ms`
+        status: response.status,
+        data: responseData,
+        headers: Object.fromEntries(response.headers.entries()),
+        time: responseTime
       });
 
-      // Add to history
+      // Save to history
       const historyItem: RequestHistory = {
-        id: crypto.randomUUID(),
+        id: Date.now().toString(),
         timestamp: Date.now(),
         method,
         url,
         queryParams: queryParams.filter(p => p.key),
         headers: headers.filter(h => h.key),
-        body: requestBody,
+        body: apiRequest,
         response: {
-          status: responseData.status,
-          data: responseData.data,
-          headers: responseData.headers
+          status: response.status,
+          data: responseData,
+          headers: Object.fromEntries(response.headers.entries())
         }
       };
+      setHistory(prev => [historyItem, ...prev].slice(0, 50));
 
-      setHistory(prev => [historyItem, ...prev]);
+      // Save sample data if method is selected
+      if (response.ok && selectedMethod['method-id']) {
+        try {
+          console.log('[Sample] Saving request/response samples for method:', selectedMethod['method-id']);
+          
+          // Save raw request and response without wrapping
+          const sampleRequest = requestBody;
+          const sampleResponse = responseData;
+
+          // Update Firebase with raw data
+          const methodRef = doc(db, 'namespace-account-method', selectedMethod['method-id']);
+          await updateDoc(methodRef, {
+            'sample-request': sampleRequest,
+            'sample-response': sampleResponse
+          });
+
+          console.log('[Sample] Successfully saved sample data');
+        } catch (error) {
+          console.error('[Sample] Error saving sample data:', error);
+        }
+      }
 
     } catch (error) {
-      console.error('Request Error:', error);
+      console.error('[Error] Request failed:', error);
       setResponse({
-        status: 0,
-        data: { error: 'Request failed' },
+        status: 500,
+        data: { error: 'Failed to send request' },
         headers: {},
-        time: '0ms'
+        time: 0
       });
     } finally {
+      console.log('[Request] Request cycle complete');
       setLoading(false);
-      console.groupEnd();
     }
   };
 
@@ -356,90 +378,121 @@ export default function ApiTester() {
     setShowHistory(false);
   };
 
-  const saveTemplate = async (template: Omit<ClientMethodTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
-    try {
-      await templateService.saveTemplate(template);
-      setShowSaveTemplate(false);
-    } catch (error) {
-      console.error('Error saving template:', error);
-      // You might want to show an error notification here
-    }
-  };
+  const handleMethodSelect = (methodId: string) => {
+    const methodToSelect = methods.find(m => m.id === methodId);
+    if (!methodToSelect) return;
 
-  const handleMethodSelect = async (method: NamespaceMethod) => {
-    console.group('API Form Population');
-    
-    // Log Method Details
-    console.group('Method Details');
-    console.log('Name:', method['namespace-account-method-name']);
-    console.log('Type:', method['namespace-account-method-type']);
-    console.log('URL Override:', method['namespace-account-method-url-override']);
-    console.log('Query Parameters:', method['namespace-account-method-queryParams']);
-    console.groupEnd();
+    // Set the selected method first
+    setSelectedMethod({
+      ...methodToSelect,
+      'method-id': methodId
+    });
 
-    // Get Account and Namespace Details
-    const accounts = await namespaceService.getNamespaceAccounts(method['namespace-id']);
-    const account = accounts[0];
-    const namespace = await namespaceService.getNamespace(method['namespace-id']);
-    
-    console.group('URL Resolution');
-    console.log('Method URL:', method['namespace-account-method-url-override']);
-    console.log('Account URL:', account?.['namespace-account-url-override']);
-    console.log('Namespace URL:', namespace?.['namespace-url']);
-    
-    // Cascade through URL options
-    const finalUrl = method['namespace-account-method-url-override'] || 
-                    account?.['namespace-account-url-override'] || 
-                    namespace?.['namespace-url'] || 
-                    '';
-    
-    console.log('Final Resolved URL:', finalUrl);
-    console.groupEnd();
-
-    // Log Account Details
-    console.group('Account Details');
-    console.log('Name:', account?.['namespace-account-name']);
-    console.log('URL Override:', account?.['namespace-account-url-override']);
-    console.log('Headers:', account?.['namespace-account-header']);
-    console.groupEnd();
-
-    // Log Form Updates
-    console.group('Form Updates');
-    
-    // Set HTTP method
-    console.log('Setting Method:', method['namespace-account-method-type']);
-    setMethod(method['namespace-account-method-type']);
-    
-    // Set the resolved URL
-    console.log('Setting URL:', finalUrl);
-    setUrl(finalUrl);
-    
-    // Set query parameters
-    if (method['namespace-account-method-queryParams']?.length) {
-      console.log('Setting Query Params:', method['namespace-account-method-queryParams']);
-      setQueryParams(method['namespace-account-method-queryParams']);
-    } else {
-      console.log('Setting Empty Query Params');
-      setQueryParams([{ key: '', value: '' }]);
-    }
-    
-    // Set headers from account
-    if (account?.['namespace-account-header']?.length) {
-      console.log('Setting Headers:', account['namespace-account-header']);
-      setHeaders(account['namespace-account-header']);
-    } else {
-      console.log('Setting Empty Headers');
-      setHeaders([{ key: '', value: '' }]);
-    }
-    
-    console.log('Resetting Body and Setting Tab to params');
+    // Reset all request data first
+    setQueryParams([{ key: '', value: '' }]);
+    setHeaders([{ key: '', value: '' }]);
     setRequestBody({});
-    setRequestFormat('json');
-    setActiveTab('params');
+    setUrl(''); // Reset URL first
+
+    // Update the API terminal data
+    setMethod(methodToSelect['namespace-account-method-type']);
     
-    console.groupEnd();
-    console.groupEnd();
+    // Build fresh URL
+    let builtUrl = '';
+    const selectedAccount = accounts.find(a => a.id === selectedAccountId);
+    const selectedNamespace = namespaces.find(n => n.id === selectedNamespaceId);
+
+    if (methodToSelect['namespace-account-method-url-override']) {
+      // If method has URL override, concatenate with account URL
+      const accountBaseUrl = selectedAccount?.['namespace-account-url-override'] || '';
+      const methodUrlOverride = methodToSelect['namespace-account-method-url-override'];
+      
+      // Ensure we don't double-concatenate URLs
+      if (methodUrlOverride.startsWith('http')) {
+        builtUrl = methodUrlOverride;
+      } else {
+        builtUrl = accountBaseUrl + (methodUrlOverride.startsWith('/') ? methodUrlOverride : '/' + methodUrlOverride);
+      }
+    } else {
+      // Otherwise use namespace URL
+      builtUrl = selectedNamespace?.['namespace-url'] || '';
+    }
+    
+    // Set fresh URL
+    setUrl(builtUrl);
+
+    // Set method's query parameters if they exist
+    if (methodToSelect['namespace-account-method-queryParams']?.length > 0) {
+      setQueryParams([
+        ...methodToSelect['namespace-account-method-queryParams'],
+        { key: '', value: '' }
+      ]);
+    }
+    
+    // Merge headers from account and method
+    const mergedHeaders = [
+      ...(selectedAccount?.['namespace-account-header'] || []),
+      ...(methodToSelect['namespace-account-method-header'] || []),
+      { key: '', value: '' }
+    ];
+    setHeaders(mergedHeaders);
+
+    // Set request body if it exists
+    if (methodToSelect['sample-request']) {
+      setRequestBody(methodToSelect['sample-request']);
+    }
+
+    setSelectedMethodId(methodId);
   };
+
+  // Also update the namespace and account selection handlers
+  const handleNamespaceSelect = (namespaceId: string) => {
+    setSelectedNamespaceId(namespaceId);
+    const namespace = namespaces.find(n => n.id === namespaceId);
+    if (namespace) {
+      setSelectedNamespace(namespace);
+    }
+    // Reset all dependent selections when namespace changes
+    setSelectedAccount(null);
+    setSelectedMethod(null);
+    setSelectedAccountId('');
+    setSelectedMethodId('');
+  };
+
+  const handleAccountSelect = (accountId: string) => {
+    setSelectedAccountId(accountId);
+    const account = accounts.find(a => a.id === accountId);
+    if (account) {
+      setSelectedAccount(account);
+      
+      // If there's a selected method, update the URL with new account
+      if (selectedMethod && selectedMethod['namespace-account-method-url-override']) {
+        const builtUrl = (account['namespace-account-url-override'] || '') + 
+                        selectedMethod['namespace-account-method-url-override'];
+        setUrl(builtUrl);
+
+        // Update headers with new account's headers
+        setHeaders([
+          ...(account['namespace-account-header'] || []),
+          ...(selectedMethod['namespace-account-method-header'] || []),
+          { key: '', value: '' }
+        ]);
+      }
+    }
+  };
+
+  // Add useEffect to update URL when account changes
+  useEffect(() => {
+    if (selectedMethodId && selectedAccountId) {
+      const selectedMethod = methods.find(m => m.id === selectedMethodId);
+      if (selectedMethod?.['namespace-account-method-url-override']) {
+        const selectedAccount = accounts.find(a => a.id === selectedAccountId);
+        const builtUrl = (selectedAccount?.['namespace-account-url-override'] || '') + 
+                        selectedMethod['namespace-account-method-url-override'];
+        setUrl(builtUrl);
+      }
+    }
+  }, [selectedAccountId, selectedMethodId, methods, accounts]);
 
   const handleTestRoute = async (route: string) => {
     setLoading(true);
@@ -514,8 +567,151 @@ export default function ApiTester() {
     }
   };
 
+  const fetchExecutions = async () => {
+    if (!executionStartTime) return;
+    
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/openApi/executions/paginated/${executionStartTime}`);
+      const data = await response.json();
+      
+      console.log('[Executions] Updated:', {
+        count: data.length,
+        statuses: data.map((exec: ApiExecution) => ({
+          page: exec['pagination-page'],
+          status: exec['execution-status'],
+          time: exec['execution-time-taken']
+        }))
+      });
+      
+      setExecutions(data);
+      
+      if (data.every((exec: ApiExecution) => ['Completed', 'Failed'].includes(exec['execution-status']))) {
+        console.log('[Executions] All pages completed, stopping poll');
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+          setPollingInterval(null);
+        }
+      }
+    } catch (error) {
+      console.error('[Error] Fetching executions failed:', error);
+    }
+  };
+
+  const handleSendLoop = async () => {
+    try {
+        setLoopLoading(true);
+        setExecutionStartTime(Date.now());
+        setCurrentExecutionId(null);
+        setExecutions([]);
+        
+        const requestStartTime = performance.now();
+        
+        console.log('[Paginated] Starting request:', {
+            method,
+            url,
+            maxIterations: iterationCount,
+            queryParams,
+            headers,
+            body: requestBody
+        });
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/openApi/proxy/paginated`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Accept-Encoding': 'gzip, deflate, br'
+            },
+            body: JSON.stringify({
+                namespaceMethodId: selectedMethod?.['method-id'] || '',
+                namespaceId: selectedNamespace?.id || '',
+                namespaceAccountId: selectedAccount?.id || '',
+                method,
+                url,
+                maxIterations: iterationCount ? parseInt(iterationCount) : undefined,
+                queryParams: queryParams.filter(p => p.key).reduce((acc, { key, value }) => {
+                    acc[key] = value;
+                    return acc;
+                }, {} as Record<string, string>),
+                headers: headers.filter(h => h.key).reduce((acc, { key, value }) => {
+                    acc[key] = value;
+                    return acc;
+                }, {} as Record<string, string>),
+                body: requestBody
+            })
+        });
+
+        const responseData = await response.json();
+        const endTime = performance.now();
+        const responseTime = Math.round(endTime - requestStartTime);
+
+        if (!response.ok) {
+            throw new Error(responseData.error || 'Failed to process request');
+        }
+
+        console.log('[Paginated] First iteration response:', {
+            status: response.status,
+            headers: Object.fromEntries(response.headers.entries()),
+            metadata: responseData.metadata,
+            data: responseData.data,
+            time: `${responseTime}ms`
+        });
+
+        if (responseData.metadata?.executionId) {
+            console.log('[Execution] Starting background polling, ID:', responseData.metadata.executionId);
+            setCurrentExecutionId(responseData.metadata.executionId);
+            const interval = setInterval(fetchExecutions, 1000);
+            setPollingInterval(interval);
+        }
+
+        setResponse({
+            status: responseData.status,
+            data: responseData.data || null,
+            headers: Object.fromEntries(response.headers.entries()),
+            time: `${responseTime}ms`
+        });
+
+    } catch (error) {
+        console.error('[Error] Paginated request failed:', error);
+        setResponse({
+            status: 500,
+            data: { 
+                error: 'Paginated request failed', 
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
+            headers: {},
+            time: '0ms'
+        });
+    } finally {
+        setLoopLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
+
+  const loadNamespaces = async () => {
+    const data = await namespaceService.getNamespaces();
+    setNamespaces(data);
+  };
+
+  const loadAccountsAndMethods = async (namespaceId: string) => {
+    const [accountsData, methodsData] = await Promise.all([
+      namespaceService.getNamespaceAccounts(namespaceId),
+      namespaceService.getNamespaceMethods(namespaceId)
+    ]);
+    setAccounts(accountsData);
+    setMethods(methodsData);
+  };
+
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
       {/* Main Header - Compact */}
       <header className="bg-white border-b py-2">
         <div className="container mx-auto px-4">
@@ -534,10 +730,66 @@ export default function ApiTester() {
 
       {/* Main Content - Flex Layout */}
       <main className="flex-1 container mx-auto px-4 py-2 flex flex-col min-h-0">
-        {/* Namespace Account Method Selector - Compact */}
-        <section className="mb-2">
-          <ApiFormHeader onMethodSelect={handleMethodSelect} />
-        </section>
+        {/* Namespace, Account, Method Selection */}
+        <div className="bg-white border rounded-lg p-4 mb-6">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Namespace
+              </label>
+              <select
+                value={selectedNamespaceId}
+                onChange={(e) => handleNamespaceSelect(e.target.value)}
+                className="w-full border rounded p-2"
+              >
+                <option value="">Select Namespace</option>
+                {namespaces.map((ns) => (
+                  <option key={ns.id} value={ns.id}>
+                    {ns['namespace-name']}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Account
+              </label>
+              <select
+                value={selectedAccountId}
+                onChange={(e) => handleAccountSelect(e.target.value)}
+                className="w-full border rounded p-2"
+                disabled={!selectedNamespaceId}
+              >
+                <option value="">Select Account</option>
+                {accounts.map((acc) => (
+                  <option key={acc.id} value={acc.id}>
+                    {acc['namespace-account-name']}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Method
+              </label>
+              <select
+                value={selectedMethodId}
+                onChange={(e) => handleMethodSelect(e.target.value)}
+                className="w-full border rounded p-2"
+                disabled={!selectedNamespaceId}
+              >
+                <option value="">Select Method</option>
+                {methods.map((method) => (
+                  <option key={method.id} value={method.id}>
+                    {method['namespace-account-method-name']}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
 
         {/* API Terminal - Flex Layout */}
         <section className="flex-1 bg-white rounded-lg shadow flex flex-col min-h-0">
@@ -561,13 +813,41 @@ export default function ApiTester() {
                 placeholder="Enter request URL"
                 className="flex-1 px-2 py-1 border rounded text-sm"
               />
-              <button
-                onClick={handleSend}
-                className="px-4 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 flex items-center gap-1"
-              >
-                <FiSend size={14} />
-                Send
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSend}
+                  disabled={loading || loopLoading}
+                  className="px-4 py-2 bg-[#ff6b4a] text-white rounded-md flex items-center gap-2 hover:bg-[#ff5436] disabled:opacity-50"
+                >
+                  {loading ? 'Sending...' : (
+                    <>
+                      <FiSend /> Send
+                    </>
+                  )}
+                </button>
+                
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={iterationCount}
+                    onChange={(e) => setIterationCount(e.target.value)}
+                    placeholder="Max iterations"
+                    className="w-32 px-2 py-1 border rounded text-sm"
+                    min="1"
+                  />
+                  <button
+                    onClick={handleSendLoop}
+                    disabled={loading || loopLoading}
+                    className="px-4 py-2 bg-[#4a90ff] text-white rounded-md flex items-center gap-2 hover:bg-[#3672ff] disabled:opacity-50"
+                  >
+                    {loopLoading ? 'Processing...' : (
+                      <>
+                        <FiRefreshCw /> Send Loop
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Request Tabs - Compact */}
@@ -785,7 +1065,6 @@ export default function ApiTester() {
                           </div>
                         ) : (
                           <div className="font-mono text-sm whitespace-pre-wrap">
-                            {/* Preview formatted JSON */}
                             {(() => {
                               try {
                                 return JSON.stringify(
@@ -808,70 +1087,107 @@ export default function ApiTester() {
               )}
             </div>
 
-            {/* Response Section with Separator */}
-            {response && (
-              <>
-                <div className="my-6 border-t border-gray-200" />
-                
-                {/* Response Header */}
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-medium">Response</h3>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                      <span className="text-gray-600">Status:</span>
-                      <span className={`font-medium ${
-                        response.status < 300 ? 'text-green-600' :
-                        response.status < 400 ? 'text-blue-600' :
-                        'text-red-600'
-                      }`}>
-                        {response.status}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-gray-600">Time:</span>
-                      <span className="font-medium">{response.time || '200ms'}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-gray-600">Size:</span>
-                      <span className="font-medium">{JSON.stringify(response.data).length} bytes</span>
-                    </div>
+            {/* Response Section */}
+            <div className="mt-4 border rounded-lg overflow-hidden bg-white shadow-sm">
+              {/* Status Header */}
+              <div className="px-4 py-3 bg-gray-50 border-b flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-700">Response</h3>
+                <div className="flex items-center gap-4">
+                  <span className="text-gray-500">{response?.time}ms</span>
+                  <span className={`px-3 py-1 rounded-full text-sm ${
+                    response?.status < 300 ? 'bg-green-100 text-green-800' :
+                    response?.status < 400 ? 'bg-blue-100 text-blue-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    Status: {response?.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Content Area - Fixed Height */}
+              <div className="grid grid-cols-2 divide-x h-[400px]">
+                {/* Response Body */}
+                <div className="flex flex-col">
+                  <div className="px-4 py-2 border-b bg-gray-50 flex items-center justify-between">
+                    <span className="font-medium text-gray-700">Body</span>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(JSON.stringify(response?.data, null, 2))}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                      title="Copy Response"
+                    >
+                      <FiCopy size={16} />
+                    </button>
+                  </div>
+                  <div className="p-4 overflow-auto h-[calc(400px-40px)]">
+                    {response?.data && (
+                      <JsonTreeView
+                        data={response.data}
+                        expandLevel={3}
+                        className="border rounded bg-gray-50 p-3"
+                      />
+                    )}
                   </div>
                 </div>
 
-                {/* Response Content - Fixed Height with Internal Scroll */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Response Body */}
-                  <div className="border rounded bg-white">
-                    <div className="flex justify-between items-center border-b px-3 py-1 bg-white">
-                      <span className="text-sm font-medium text-gray-700">Body</span>
-                      <button
-                        onClick={() => downloadJson(response.data, 'response.json')}
-                        className="text-sm text-[#ff6b4a] hover:text-[#ff5436]"
-                        title="Download JSON"
-                      >
-                        <FiDownload size={14} />
-                      </button>
-                    </div>
-                    <div className="h-[400px] overflow-auto">
-                      <div className="p-2 font-mono text-sm">
-                        <JsonTreeView data={response.data} />
-                      </div>
-                    </div>
+                {/* Response Headers */}
+                <div className="flex flex-col">
+                  <div className="px-4 py-2 border-b bg-gray-50 flex items-center justify-between">
+                    <span className="font-medium text-gray-700">Headers</span>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(
+                        Object.entries(response?.headers || {})
+                          .map(([key, value]) => `${key}: ${value}`)
+                          .join('\n')
+                      )}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                      title="Copy Headers"
+                    >
+                      <FiCopy size={16} />
+                    </button>
                   </div>
-
-                  {/* Response Headers */}
-                  <div className="border rounded bg-white">
-                    <div className="px-3 py-1 border-b bg-white">
-                      <span className="text-sm font-medium text-gray-700">Headers</span>
-                    </div>
-                    <div className="h-[400px] overflow-auto">
-                      <div className="p-2 font-mono text-sm">
-                        <JsonTreeView data={response.headers} />
-                      </div>
-                    </div>
+                  <div className="p-4 overflow-auto h-[calc(400px-40px)]">
+                    <JsonTreeView
+                      data={response?.headers || {}}
+                      expandLevel={3}
+                      className="border rounded bg-gray-50 p-3"
+                    />
                   </div>
                 </div>
-              </>
+              </div>
+            </div>
+
+            {executions.length > 0 && (
+              <div className="mt-4 border rounded-lg bg-white p-4 shadow-sm">
+                <h3 className="text-lg font-medium mb-4">Execution Details</h3>
+                <div className="space-y-4">
+                  {executions.map((execution, index) => (
+                    <div key={execution.uuid} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium">Execution #{index + 1}</span>
+                        <span className={`px-2 py-1 rounded text-sm ${
+                          execution['execution-status'] === 'Completed' ? 'bg-green-100 text-green-800' :
+                          execution['execution-status'] === 'Failed' ? 'bg-red-100 text-red-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {execution['execution-status']}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p><span className="font-medium">Start Time:</span> {new Date(execution['execution-start-time']).toLocaleString()}</p>
+                          <p><span className="font-medium">Duration:</span> {execution['execution-time-taken']}ms</p>
+                          <p><span className="font-medium">Response Size:</span> {execution['execution-response-size']} bytes</p>
+                        </div>
+                        <div>
+                          <p><span className="font-medium">Status:</span> {execution['response-status']}</p>
+                          <p><span className="font-medium">URL:</span> {execution.url}</p>
+                          <p><span className="font-medium">Method:</span> {execution.method}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </section>

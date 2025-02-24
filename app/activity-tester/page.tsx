@@ -12,7 +12,7 @@ export default function ActivityTester() {
 
   return (
     <div className="p-8">
-      <h2 className="text-2xl font-bold mb-6">Activity Tester</h2>
+      <h2 className="text-2xl font-bold mb-6">Activity Service</h2>
       {Object.entries(groupedRoutes).map(([group, routes]) => (
         <RouteGroup
           key={group}

@@ -3,67 +3,98 @@
 import { useState } from 'react';
 import { RouteConfig, RequestBody, ApiResponse } from '../types/route';
 import { FiCopy, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import JsonEditor from '../components/schema-editor/JsonEditor';
 
 interface RouteTestProps {
   route: RouteConfig;
 }
-
-const routes = [
-  {
-    name: 'getAllClients',
-    method: 'GET',
-    path: '/api/client/getAllClients',
-    description: 'Get all clients'
-  },
-  {
-    name: 'getClientById',
-    method: 'GET',
-    path: '/api/client/getClientById',
-    description: 'Get client by ID'
-  },
-  {
-    name: 'updateClientById',
-    method: 'PUT',
-    path: '/api/client/updateClient',
-    description: 'Update client'
-  },
-  {
-    name: 'deleteClientById',
-    method: 'DELETE',
-    path: '/api/client/deleteClient',
-    description: 'Delete client'
-  },
-  {
-    name: 'createClient',
-    method: 'POST',
-    path: '/api/client/createClient',
-    description: 'Create a new client',
-    body: {
-      clientName: 'Test Client'
-    }
-  },
-];
 
 export default function RouteTest({ route }: RouteTestProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   
   // Set default request body based on route
   const getDefaultRequestBody = () => {
-    if (route.path === '/api/clients/createClient') {
-      return JSON.stringify({
-        clientName: "string", // Only field needed in request body
-        // These fields will be added by backend:
-        // uuid: "auto-generated",
-        // createdAt: "auto-generated",
-        // createdBy: "system",
-        // tags: [],
-        // status: {
-        //   isActive: true,
-        //   lastUpdated: "auto-generated"
-        // }
-      }, null, 2);
+    switch (route.path) {
+      case '/api/createSchema':
+        return JSON.stringify({
+          schemaName: "TestSchema",
+          schema: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              age: { type: "number" }
+            }
+          }
+        }, null, 2);
+
+      case '/api/getSchema':
+      case '/api/deleteSchema':
+        return JSON.stringify({
+          uuid: "<schema_uuid>"
+        }, null, 2);
+
+      case '/api/updateSchema':
+        return JSON.stringify({
+          uuid: "<schema_uuid>",
+          updateData: {
+            schemaName: "UpdatedSchema",
+            schema: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                age: { type: "number" },
+                email: { type: "string" }
+              }
+            }
+          }
+        }, null, 2);
+
+      case '/api/createData':
+        return JSON.stringify({
+          schemaId: "<schema_uuid>",
+          data: {
+            name: "John Doe",
+            age: 30
+          }
+        }, null, 2);
+
+      case '/api/getData':
+      case '/api/deleteData':
+        return JSON.stringify({
+          schemaId: "<schema_uuid>",
+          uuid: "<data_uuid>"
+        }, null, 2);
+
+      case '/api/updateData':
+        return JSON.stringify({
+          schemaId: "<schema_uuid>",
+          uuid: "<data_uuid>",
+          data: {
+            name: "Jane Doe",
+            age: 25
+          }
+        }, null, 2);
+
+      case '/api/getAllData':
+        return JSON.stringify({
+          schemaId: "<schema_uuid>"
+        }, null, 2);
+
+      case '/api/getChildSchemaData':
+        return JSON.stringify({
+          parentSchemaId: "<parent_schema_uuid>",
+          childSchemaId: "<child_schema_uuid>"
+        }, null, 2);
+
+      case '/api/searchChildData':
+        return JSON.stringify({
+          childSchemaId: "<child_schema_uuid>",
+          query: "search_term"
+        }, null, 2);
+
+      default:
+        return '{}';
     }
-    return '{}';
   };
 
   const [requestBody, setRequestBody] = useState(getDefaultRequestBody());
@@ -111,6 +142,8 @@ export default function RouteTest({ route }: RouteTestProps) {
         console.error('Invalid JSON:', e);
         setResponse({
           status: 400,
+          statusText: 'Error',
+          headers: {},
           data: null,
           error: 'Invalid JSON in request body'
         });
@@ -132,22 +165,32 @@ export default function RouteTest({ route }: RouteTestProps) {
         body: route.method !== 'GET' ? JSON.stringify(body) : undefined,
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
       
+      // Get response headers
+      const headers: { [key: string]: string } = {};
+      response.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+
       // Log response details
       console.log('Response:', {
         status: response.status,
-        data
+        data: responseData
       });
 
       setResponse({
         status: response.status,
-        data,
+        statusText: response.statusText,
+        headers,
+        data: responseData
       });
     } catch (error) {
       console.error('Error:', error);
       setResponse({
         status: 500,
+        statusText: 'Error',
+        headers: {},
         data: null,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
       });
@@ -194,28 +237,36 @@ export default function RouteTest({ route }: RouteTestProps) {
       setResponse(data);
     } catch (error) {
       console.error('Error testing route:', error);
-      setResponse({ status: 500, data: null, error: 'Failed to test route' });
+      setResponse({
+        status: 500,
+        statusText: 'Error',
+        headers: {},
+        data: null,
+        error: 'Failed to test route'
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="mb-3 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
-      {/* Header */}
-      <div className={`${getMethodBg(route.method)} transition-colors duration-200`}>
-        <div className="flex items-center p-2">
-          <span className={`${getMethodColor(route.method)} px-3 py-1 rounded text-white font-medium transition-colors duration-200`}>
-            {route.method}
-          </span>
-          <span className="ml-3 font-mono text-sm text-gray-700">{route.path}</span>
-          <span className="ml-4 text-gray-600 text-sm">{route.description}</span>
-          <button 
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="ml-auto p-1 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            {isExpanded ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
-          </button>
+    <div className="border rounded-lg bg-white shadow-sm mb-4">
+      {/* Route Header */}
+      <div className="p-4 flex items-center justify-between">
+        <div className={`${getMethodBg(route.method)} transition-colors duration-200`}>
+          <div className="flex items-center p-2">
+            <span className={`${getMethodColor(route.method)} px-3 py-1 rounded text-white font-medium transition-colors duration-200`}>
+              {route.method}
+            </span>
+            <span className="ml-3 font-mono text-sm text-gray-700">{route.path}</span>
+            <span className="ml-4 text-gray-600 text-sm">{route.description}</span>
+            <button 
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="ml-auto p-1 text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              {isExpanded ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -335,26 +386,77 @@ export default function RouteTest({ route }: RouteTestProps) {
 
             {/* Response Section */}
             {response && (
-              <div className="border-t pt-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium text-gray-700">Responses</h3>
-                  <div className="flex items-center">
-                    <span className="text-sm text-gray-600">Response content type:</span>
-                    <select className="ml-2 text-sm border rounded-md p-1.5">
-                      <option>application/json</option>
-                    </select>
+              <div className="border-t">
+                {/* Response Header */}
+                <div className="p-4 border-b bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium text-gray-700">Response</h3>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-sm ${
+                        response.status < 300 ? 'bg-green-100 text-green-800' :
+                        response.status < 400 ? 'bg-blue-100 text-blue-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {response.status} {response.statusText}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="relative">
-                  <pre className="p-4 bg-gray-50 rounded-md border overflow-auto font-mono text-sm">
-                    {JSON.stringify(response.data, null, 2)}
-                  </pre>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(JSON.stringify(response.data, null, 2))}
-                    className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <FiCopy size={16} />
-                  </button>
+
+                {/* Response Content */}
+                <div className="grid grid-cols-2 divide-x">
+                  {/* Response Body */}
+                  <div className="p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="font-medium text-gray-700">Response Body</h4>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(JSON.stringify(response.data, null, 2))}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Copy Response"
+                      >
+                        <FiCopy size={16} />
+                      </button>
+                    </div>
+                    <div className="h-[400px]">
+                      <JsonEditor
+                        value={response.data}
+                        onChange={() => {}}
+                        readOnly={true}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Response Headers */}
+                  <div className="p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="font-medium text-gray-700">Response Headers</h4>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(JSON.stringify(response.headers, null, 2))}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Copy Headers"
+                      >
+                        <FiCopy size={16} />
+                      </button>
+                    </div>
+                    <div className="h-[400px] overflow-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="text-left py-2 px-4 font-medium text-gray-600">Header</th>
+                            <th className="text-left py-2 px-4 font-medium text-gray-600">Value</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {Object.entries(response.headers).map(([key, value]) => (
+                            <tr key={key} className="hover:bg-gray-50">
+                              <td className="py-2 px-4 font-mono text-gray-600">{key}</td>
+                              <td className="py-2 px-4 font-mono text-gray-800">{value}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

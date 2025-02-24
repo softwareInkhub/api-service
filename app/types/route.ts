@@ -11,6 +11,8 @@ export interface RequestBody {
 
 export interface ApiResponse {
   status: number;
+  statusText: string;
+  headers: { [key: string]: string };
   data: any;
   error?: string;
 } 

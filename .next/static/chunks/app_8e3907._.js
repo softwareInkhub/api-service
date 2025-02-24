@@ -17,52 +17,93 @@ var _s = __turbopack_refresh__.signature();
 'use client';
 ;
 ;
-const routes = [
-    {
-        name: 'getAllClients',
-        method: 'GET',
-        path: '/api/client/getAllClients',
-        description: 'Get all clients'
-    },
-    {
-        name: 'getClientById',
-        method: 'GET',
-        path: '/api/client/getClientById',
-        description: 'Get client by ID'
-    },
-    {
-        name: 'updateClientById',
-        method: 'PUT',
-        path: '/api/client/updateClient',
-        description: 'Update client'
-    },
-    {
-        name: 'deleteClientById',
-        method: 'DELETE',
-        path: '/api/client/deleteClient',
-        description: 'Delete client'
-    },
-    {
-        name: 'createClient',
-        method: 'POST',
-        path: '/api/client/createClient',
-        description: 'Create a new client',
-        body: {
-            clientName: 'Test Client'
-        }
-    }
-];
 function RouteTest({ route }) {
     _s();
     const [isExpanded, setIsExpanded] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     // Set default request body based on route
     const getDefaultRequestBody = ()=>{
-        if (route.path === '/api/clients/createClient') {
-            return JSON.stringify({
-                clientName: "string"
-            }, null, 2);
+        switch(route.path){
+            case '/api/createSchema':
+                return JSON.stringify({
+                    schemaName: "TestSchema",
+                    schema: {
+                        type: "object",
+                        properties: {
+                            name: {
+                                type: "string"
+                            },
+                            age: {
+                                type: "number"
+                            }
+                        }
+                    }
+                }, null, 2);
+            case '/api/getSchema':
+            case '/api/deleteSchema':
+                return JSON.stringify({
+                    uuid: "<schema_uuid>"
+                }, null, 2);
+            case '/api/updateSchema':
+                return JSON.stringify({
+                    uuid: "<schema_uuid>",
+                    updateData: {
+                        schemaName: "UpdatedSchema",
+                        schema: {
+                            type: "object",
+                            properties: {
+                                name: {
+                                    type: "string"
+                                },
+                                age: {
+                                    type: "number"
+                                },
+                                email: {
+                                    type: "string"
+                                }
+                            }
+                        }
+                    }
+                }, null, 2);
+            case '/api/createData':
+                return JSON.stringify({
+                    schemaId: "<schema_uuid>",
+                    data: {
+                        name: "John Doe",
+                        age: 30
+                    }
+                }, null, 2);
+            case '/api/getData':
+            case '/api/deleteData':
+                return JSON.stringify({
+                    schemaId: "<schema_uuid>",
+                    uuid: "<data_uuid>"
+                }, null, 2);
+            case '/api/updateData':
+                return JSON.stringify({
+                    schemaId: "<schema_uuid>",
+                    uuid: "<data_uuid>",
+                    data: {
+                        name: "Jane Doe",
+                        age: 25
+                    }
+                }, null, 2);
+            case '/api/getAllData':
+                return JSON.stringify({
+                    schemaId: "<schema_uuid>"
+                }, null, 2);
+            case '/api/getChildSchemaData':
+                return JSON.stringify({
+                    parentSchemaId: "<parent_schema_uuid>",
+                    childSchemaId: "<child_schema_uuid>"
+                }, null, 2);
+            case '/api/searchChildData':
+                return JSON.stringify({
+                    childSchemaId: "<child_schema_uuid>",
+                    query: "search_term"
+                }, null, 2);
+            default:
+                return '{}';
         }
-        return '{}';
     };
     const [requestBody, setRequestBody] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(getDefaultRequestBody());
     const [pathParams, setPathParams] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({});
@@ -196,7 +237,7 @@ function RouteTest({ route }) {
                             children: route.method
                         }, void 0, false, {
                             fileName: "[project]/app/components/RouteTest.tsx",
-                            lineNumber: 208,
+                            lineNumber: 240,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -204,7 +245,7 @@ function RouteTest({ route }) {
                             children: route.path
                         }, void 0, false, {
                             fileName: "[project]/app/components/RouteTest.tsx",
-                            lineNumber: 211,
+                            lineNumber: 243,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -212,7 +253,7 @@ function RouteTest({ route }) {
                             children: route.description
                         }, void 0, false, {
                             fileName: "[project]/app/components/RouteTest.tsx",
-                            lineNumber: 212,
+                            lineNumber: 244,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -222,29 +263,29 @@ function RouteTest({ route }) {
                                 size: 20
                             }, void 0, false, {
                                 fileName: "[project]/app/components/RouteTest.tsx",
-                                lineNumber: 217,
+                                lineNumber: 249,
                                 columnNumber: 27
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiChevronDown"], {
                                 size: 20
                             }, void 0, false, {
                                 fileName: "[project]/app/components/RouteTest.tsx",
-                                lineNumber: 217,
+                                lineNumber: 249,
                                 columnNumber: 55
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/components/RouteTest.tsx",
-                            lineNumber: 213,
+                            lineNumber: 245,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/components/RouteTest.tsx",
-                    lineNumber: 207,
+                    lineNumber: 239,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/components/RouteTest.tsx",
-                lineNumber: 206,
+                lineNumber: 238,
                 columnNumber: 7
             }, this),
             isExpanded && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -263,7 +304,7 @@ function RouteTest({ route }) {
                                             children: "Parameters"
                                         }, void 0, false, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 228,
+                                            lineNumber: 260,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -272,13 +313,13 @@ function RouteTest({ route }) {
                                             children: "Try it out"
                                         }, void 0, false, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 229,
+                                            lineNumber: 261,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                    lineNumber: 227,
+                                    lineNumber: 259,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("table", {
@@ -292,7 +333,7 @@ function RouteTest({ route }) {
                                                         children: "Name"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/components/RouteTest.tsx",
-                                                        lineNumber: 240,
+                                                        lineNumber: 272,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("th", {
@@ -300,18 +341,18 @@ function RouteTest({ route }) {
                                                         children: "Description"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/components/RouteTest.tsx",
-                                                        lineNumber: 241,
+                                                        lineNumber: 273,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/components/RouteTest.tsx",
-                                                lineNumber: 239,
+                                                lineNumber: 271,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 238,
+                                            lineNumber: 270,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("tbody", {
@@ -330,7 +371,7 @@ function RouteTest({ route }) {
                                                                             children: param
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                                                            lineNumber: 252,
+                                                                            lineNumber: 284,
                                                                             columnNumber: 31
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -338,7 +379,7 @@ function RouteTest({ route }) {
                                                                             children: "*"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                                                            lineNumber: 253,
+                                                                            lineNumber: 285,
                                                                             columnNumber: 31
                                                                         }, this),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -347,25 +388,25 @@ function RouteTest({ route }) {
                                                                                 "integer($int64)",
                                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                                                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                                                                    lineNumber: 256,
+                                                                                    lineNumber: 288,
                                                                                     columnNumber: 33
                                                                                 }, this),
                                                                                 "(path)"
                                                                             ]
                                                                         }, void 0, true, {
                                                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                                                            lineNumber: 254,
+                                                                            lineNumber: 286,
                                                                             columnNumber: 31
                                                                         }, this)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                                                    lineNumber: 251,
+                                                                    lineNumber: 283,
                                                                     columnNumber: 29
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/components/RouteTest.tsx",
-                                                                lineNumber: 250,
+                                                                lineNumber: 282,
                                                                 columnNumber: 27
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("td", {
@@ -381,18 +422,18 @@ function RouteTest({ route }) {
                                                                     placeholder: `ID of ${param} that needs to be updated`
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                                                    lineNumber: 262,
+                                                                    lineNumber: 294,
                                                                     columnNumber: 29
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/components/RouteTest.tsx",
-                                                                lineNumber: 261,
+                                                                lineNumber: 293,
                                                                 columnNumber: 27
                                                             }, this)
                                                         ]
                                                     }, param, true, {
                                                         fileName: "[project]/app/components/RouteTest.tsx",
-                                                        lineNumber: 249,
+                                                        lineNumber: 281,
                                                         columnNumber: 25
                                                     }, this);
                                                 }
@@ -400,19 +441,19 @@ function RouteTest({ route }) {
                                             })
                                         }, void 0, false, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 244,
+                                            lineNumber: 276,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                    lineNumber: 237,
+                                    lineNumber: 269,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/components/RouteTest.tsx",
-                            lineNumber: 226,
+                            lineNumber: 258,
                             columnNumber: 13
                         }, this),
                         route.method !== 'GET' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -429,7 +470,7 @@ function RouteTest({ route }) {
                                                     children: "body"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                                    lineNumber: 287,
+                                                    lineNumber: 319,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -437,13 +478,13 @@ function RouteTest({ route }) {
                                                     children: "*"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                                    lineNumber: 288,
+                                                    lineNumber: 320,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 286,
+                                            lineNumber: 318,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -452,20 +493,20 @@ function RouteTest({ route }) {
                                                 "object",
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                                    lineNumber: 292,
+                                                    lineNumber: 324,
                                                     columnNumber: 21
                                                 }, this),
                                                 "(body)"
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 290,
+                                            lineNumber: 322,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                    lineNumber: 285,
+                                    lineNumber: 317,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -476,7 +517,7 @@ function RouteTest({ route }) {
                                             children: "Parameter content type:"
                                         }, void 0, false, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 297,
+                                            lineNumber: 329,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -485,18 +526,18 @@ function RouteTest({ route }) {
                                                 children: "application/json"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/components/RouteTest.tsx",
-                                                lineNumber: 299,
+                                                lineNumber: 331,
                                                 columnNumber: 21
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 298,
+                                            lineNumber: 330,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                    lineNumber: 296,
+                                    lineNumber: 328,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -507,7 +548,7 @@ function RouteTest({ route }) {
                                             children: "Example Value | Model"
                                         }, void 0, false, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 303,
+                                            lineNumber: 335,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -530,12 +571,12 @@ function RouteTest({ route }) {
 }` : requestBody
                                             }, void 0, false, {
                                                 fileName: "[project]/app/components/RouteTest.tsx",
-                                                lineNumber: 307,
+                                                lineNumber: 339,
                                                 columnNumber: 21
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 306,
+                                            lineNumber: 338,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
@@ -545,19 +586,19 @@ function RouteTest({ route }) {
                                             placeholder: "Enter request body..."
                                         }, void 0, false, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 326,
+                                            lineNumber: 358,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                    lineNumber: 302,
+                                    lineNumber: 334,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/components/RouteTest.tsx",
-                            lineNumber: 284,
+                            lineNumber: 316,
                             columnNumber: 15
                         }, this),
                         response && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -568,102 +609,134 @@ function RouteTest({ route }) {
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
                                             className: "text-lg font-medium text-gray-700",
-                                            children: "Responses"
+                                            children: "Response"
                                         }, void 0, false, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 340,
+                                            lineNumber: 372,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "flex items-center",
+                                            className: "flex items-center gap-2",
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "text-sm text-gray-600",
-                                                    children: "Response content type:"
-                                                }, void 0, false, {
+                                                    className: `px-2 py-1 rounded text-sm ${response.status < 300 ? 'bg-green-100 text-green-800' : response.status < 400 ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`,
+                                                    children: [
+                                                        "Status: ",
+                                                        response.status
+                                                    ]
+                                                }, void 0, true, {
                                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                                    lineNumber: 342,
+                                                    lineNumber: 374,
                                                     columnNumber: 21
                                                 }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
-                                                    className: "ml-2 text-sm border rounded-md p-1.5",
-                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
-                                                        children: "application/json"
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    onClick: ()=>navigator.clipboard.writeText(JSON.stringify(response.data, null, 2)),
+                                                    className: "p-1.5 text-gray-400 hover:text-gray-600 transition-colors",
+                                                    title: "Copy Response",
+                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiCopy"], {
+                                                        size: 16
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/components/RouteTest.tsx",
-                                                        lineNumber: 344,
+                                                        lineNumber: 386,
                                                         columnNumber: 23
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                                    lineNumber: 343,
+                                                    lineNumber: 381,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 341,
+                                            lineNumber: 373,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                    lineNumber: 339,
+                                    lineNumber: 371,
                                     columnNumber: 17
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "relative",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("pre", {
-                                            className: "p-4 bg-gray-50 rounded-md border overflow-auto font-mono text-sm",
-                                            children: JSON.stringify(response.data, null, 2)
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 349,
-                                            columnNumber: 19
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                            onClick: ()=>navigator.clipboard.writeText(JSON.stringify(response.data, null, 2)),
-                                            className: "absolute top-2 right-2 p-1.5 text-gray-400 hover:text-gray-600 transition-colors",
-                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiCopy"], {
-                                                size: 16
+                                    className: "bg-gray-50 rounded-lg border",
+                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "relative",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "max-h-[400px] overflow-auto",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("pre", {
+                                                    className: "p-4 text-sm font-mono",
+                                                    style: {
+                                                        whiteSpace: 'pre-wrap',
+                                                        wordBreak: 'break-word',
+                                                        overflowWrap: 'break-word'
+                                                    },
+                                                    children: JSON.stringify(response.data, null, 2)
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/components/RouteTest.tsx",
+                                                    lineNumber: 396,
+                                                    columnNumber: 23
+                                                }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/components/RouteTest.tsx",
-                                                lineNumber: 356,
+                                                lineNumber: 395,
+                                                columnNumber: 21
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "absolute top-2 right-2",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    onClick: ()=>navigator.clipboard.writeText(JSON.stringify(response.data, null, 2)),
+                                                    className: "p-2 bg-white rounded-md shadow-sm text-gray-400 hover:text-gray-600 transition-colors",
+                                                    title: "Copy Response",
+                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$react$2d$icons$2f$fi$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["FiCopy"], {
+                                                        size: 16
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/components/RouteTest.tsx",
+                                                        lineNumber: 415,
+                                                        columnNumber: 25
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/components/RouteTest.tsx",
+                                                    lineNumber: 410,
+                                                    columnNumber: 23
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/components/RouteTest.tsx",
+                                                lineNumber: 409,
                                                 columnNumber: 21
                                             }, this)
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/components/RouteTest.tsx",
-                                            lineNumber: 352,
-                                            columnNumber: 19
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/components/RouteTest.tsx",
+                                        lineNumber: 393,
+                                        columnNumber: 19
+                                    }, this)
+                                }, void 0, false, {
                                     fileName: "[project]/app/components/RouteTest.tsx",
-                                    lineNumber: 348,
+                                    lineNumber: 392,
                                     columnNumber: 17
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/components/RouteTest.tsx",
-                            lineNumber: 338,
+                            lineNumber: 370,
                             columnNumber: 15
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/components/RouteTest.tsx",
-                    lineNumber: 224,
+                    lineNumber: 256,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/components/RouteTest.tsx",
-                lineNumber: 223,
+                lineNumber: 255,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/components/RouteTest.tsx",
-        lineNumber: 204,
+        lineNumber: 236,
         columnNumber: 5
     }, this);
 }

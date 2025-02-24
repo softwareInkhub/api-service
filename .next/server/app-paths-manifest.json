@@ -1,7 +1,8 @@
 {
-  "/namespace-management/page": "app/namespace-management/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js",
   "/api-tester/page": "app/api-tester/page.js",
-  "/client-method-templates/page": "app/client-method-templates/page.js",
-  "/activity-tester/page": "app/activity-tester/page.js"
+  "/schema-service/page": "app/schema-service/page.js",
+  "/namespace-management/page": "app/namespace-management/page.js",
+  "/activity-tester/page": "app/activity-tester/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js"
 }

@@ -2,36 +2,38 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiBox, FiCode, FiDatabase, FiLayers } from 'react-icons/fi';
+import { FiCode, FiDatabase, FiLayers, FiGrid } from 'react-icons/fi';
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   const navItems = [
     {
-      name: 'API Tester',
+      name: 'Activity Service',
+      href: '/activity-tester',
+      icon: <FiLayers />,
+      description: 'Test activities'
+    },
+    {
+      name: 'API Service',
       href: '/api-tester',
       icon: <FiCode />,
       description: 'Test API endpoints'
     },
     {
-      name: 'Templates',
-      href: '/client-method-templates',
-      icon: <FiBox />,
-      description: 'Saved API templates'
-    },
-    {
-      name: 'Namespace',
+      name: 'Namespace Service',
       href: '/namespace-management',
       icon: <FiDatabase />,
       description: 'Manage API namespaces'
     },
     {
-      name: 'Activity Tester',
-      href: '/activity-tester',
-      icon: <FiLayers />,
-      description: 'Test activities'
-    }
+      name: 'Schema Service',
+      href: '/schema-service',
+      icon: <FiGrid />,
+      description: 'Manage data schemas'
+    },
+   
+
   ];
 
   return (

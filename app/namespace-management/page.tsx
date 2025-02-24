@@ -4,21 +4,125 @@ import { useState, useEffect } from 'react';
 import { db } from '../config/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, setDoc } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
-import { FiPlus, FiEdit2, FiTrash2, FiChevronDown, FiChevronRight, FiSave } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiChevronDown, FiChevronRight, FiSave, FiDownload, FiCopy, FiCheck } from 'react-icons/fi';
 import ExpandableCard from '../components/shared/ExpandableCard';
 import EditableTable from '../components/shared/EditableTable';
-import type { 
+import { 
   Namespace, 
   NamespaceAccount, 
-  NamespaceMethod, 
-  NamespaceTemplate,
-  KeyValuePair 
+  NamespaceMethod,
+  KeyValuePair,
+  FirebaseMethod
 } from '../types/namespace';
 import { HttpMethod } from '../types/namespace';
 import KeyValueTable from '../components/shared/KeyValueTable';
-import TemplateSection from '../components/namespace/TemplateSection';
 import TabHeader from '../components/shared/TabHeader';
-import TemplateMapping from '../components/namespace/TemplateMapping';
+import { JsonSchemaService } from '../services/jsonSchemaService';
+import { makeApiCall } from '../services/apiService';
+import ApiTestDialog from '../components/namespace/ApiTestDialog';
+
+const KeyValueEditor = ({ 
+  pairs = [], 
+  onChange, 
+  title,
+  methodId,
+  accountId,
+  collectionName
+}: { 
+  pairs: KeyValuePair[];
+  onChange: (pairs: KeyValuePair[]) => void;
+  title: string;
+  methodId?: string;
+  accountId?: string;
+  collectionName: 'namespace-account-method' | 'namespace-account';
+}) => {
+  const [localPairs, setLocalPairs] = useState(pairs);
+  const [isDirty, setIsDirty] = useState(false);
+
+  const handleAdd = () => {
+    setLocalPairs([...localPairs, { key: '', value: '' }]);
+    setIsDirty(true);
+  };
+
+  const handleRemove = (index: number) => {
+    setLocalPairs(localPairs.filter((_, i) => i !== index));
+    setIsDirty(true);
+  };
+
+  const handleChange = (index: number, field: 'key' | 'value', value: string) => {
+    const newPairs = [...localPairs];
+    newPairs[index] = { ...newPairs[index], [field]: value };
+    setLocalPairs(newPairs);
+    setIsDirty(true);
+  };
+
+  const handleSave = async () => {
+    try {
+      const docRef = doc(db, collectionName, methodId || accountId || '');
+      const updateField = collectionName === 'namespace-account-method' 
+        ? (title === 'Headers' ? 'namespace-account-method-header' : 'namespace-account-method-queryParams')
+        : 'namespace-account-header';
+      
+      await updateDoc(docRef, {
+        [updateField]: localPairs
+      });
+      onChange(localPairs);
+      setIsDirty(false);
+    } catch (error) {
+      console.error('Error saving changes:', error);
+    }
+  };
+
+  return (
+    <div className="border rounded-lg p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-medium text-gray-700">{title}</h3>
+        <div className="flex gap-2">
+          <button
+            onClick={handleAdd}
+            className="text-sm text-[#ff6b4a] hover:text-[#ff5436] flex items-center gap-1"
+          >
+            <FiPlus size={14} /> Add Item
+          </button>
+          {isDirty && (
+            <button
+              onClick={handleSave}
+              className="text-sm bg-[#ff6b4a] text-white px-3 py-1 rounded hover:bg-[#ff5436] flex items-center gap-1"
+            >
+              <FiSave size={14} /> Save Changes
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="space-y-2">
+        {localPairs.map((pair, index) => (
+          <div key={index} className="flex gap-2 items-center">
+            <input
+              type="text"
+              value={pair.key}
+              onChange={(e) => handleChange(index, 'key', e.target.value)}
+              placeholder="Key"
+              className="flex-1 px-3 py-2 border rounded text-sm"
+            />
+            <input
+              type="text"
+              value={pair.value}
+              onChange={(e) => handleChange(index, 'value', e.target.value)}
+              placeholder="Value"
+              className="flex-1 px-3 py-2 border rounded text-sm"
+            />
+            <button
+              onClick={() => handleRemove(index)}
+              className="text-gray-400 hover:text-red-500"
+            >
+              <FiTrash2 size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export default function NamespaceManagement() {
   const [namespaces, setNamespaces] = useState<Namespace[]>([]);
@@ -28,15 +132,24 @@ export default function NamespaceManagement() {
   const [expandedAccountId, setExpandedAccountId] = useState<string | null>(null);
   const [expandedMethodId, setExpandedMethodId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [templates, setTemplates] = useState<NamespaceTemplate[]>([]);
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('Namespaces');
-  const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<NamespaceTemplate | null>(null);
+  const [showJsonModal, setShowJsonModal] = useState(false);
+  const [jsonModalData, setJsonModalData] = useState<{ title: string; data: any } | null>(null);
+  const [schemaTestData, setSchemaTestData] = useState<string>('');
+  const [schemaValidationErrors, setSchemaValidationErrors] = useState<string[]>([]);
+  const [editedData, setEditedData] = useState<string>('');
+  const [editedSchema, setEditedSchema] = useState<string>('');
+  const [topSectionHeight, setTopSectionHeight] = useState(45);
+  const [middleSectionHeight, setMiddleSectionHeight] = useState(35);
+  const [copiedState, setCopiedState] = useState<Record<string, boolean>>({
+    data: false,
+    schema: false,
+    validate: false
+  });
+  const [showApiTest, setShowApiTest] = useState(false);
+  const [selectedTestMethod, setSelectedTestMethod] = useState<NamespaceMethod | null>(null);
 
   useEffect(() => {
     loadNamespaces();
-    loadTemplates();
   }, []);
 
   useEffect(() => {
@@ -75,7 +188,7 @@ export default function NamespaceManagement() {
       const methodsQuery = query(collection(db, 'namespace-account-method'), where('namespace-id', '==', namespaceId));
       const methodsSnapshot = await getDocs(methodsQuery);
       const methodsData = methodsSnapshot.docs.map(doc => ({
-        id: doc.id,
+        "method-id": doc.id,
         ...doc.data()
       })) as NamespaceMethod[];
       setMethods(prev => ({ ...prev, [namespaceId]: methodsData }));
@@ -160,27 +273,38 @@ export default function NamespaceManagement() {
 
   const handleAddMethod = async (namespaceId: string) => {
     try {
-      const id = uuidv4();
+      const methodId = uuidv4();
       const newMethod = {
-        id,
+        id: methodId,
+        'method-id': methodId,
+        'namespace-account-method-id': methodId,
         'namespace-id': namespaceId,
         'namespace-account-method-name': 'New Method',
         'namespace-account-method-type': HttpMethod.GET,
         'namespace-account-method-url-override': '',
         'namespace-account-method-queryParams': []
       };
-      await setDoc(doc(db, 'namespace-account-method', id), newMethod);
+      await setDoc(doc(db, 'namespace-account-method', methodId), newMethod);
       loadAccountsAndMethods(namespaceId);
     } catch (error) {
       console.error('Error adding method:', error);
     }
   };
 
-  const handleUpdateMethod = async (methodId: string, namespaceId: string, key: string, value: string) => {
+  const handleUpdateMethod = async (methodId: string, namespaceId: string, key: string, value: any) => {
     try {
-      await updateDoc(doc(db, 'namespace-account-method', methodId), {
-        [key]: value
-      });
+      const methodRef = doc(db, 'namespace-account-method', methodId);
+      const updateData: Record<string, any> = { [key]: value };
+      
+      if (key === 'sample-request') {
+        updateData['request-schema'] = JsonSchemaService.generateSchema(value);
+      }
+      if (key === 'sample-response') {
+        updateData['sample-response'] = value;
+        updateData['response-schema'] = JsonSchemaService.generateSchema(value);
+      }
+
+      await updateDoc(methodRef, updateData);
       loadAccountsAndMethods(namespaceId);
     } catch (error) {
       console.error('Error updating method:', error);
@@ -227,12 +351,31 @@ export default function NamespaceManagement() {
 
   const handleDuplicateMethod = async (method: NamespaceMethod, namespaceId: string) => {
     try {
-      const { id, ...methodData } = method;
-      await addDoc(collection(db, 'namespace-account-method'), {
-        ...methodData,
-        'namespace-account-method-name': `${methodData['namespace-account-method-name']} (Copy)`,
-        'namespace-account-method-id': uuidv4()
-      });
+      const newMethodId = uuidv4();
+      
+      // Omit schema and sample data fields first
+      const {
+        'sample-request': _req,
+        'request-schema': _reqSchema,
+        'sample-response': _res,
+        'response-schema': _resSchema,
+        ...baseMethod
+      } = method;
+
+      // Create new method data with null schemas
+      const methodData: FirebaseMethod = {
+        ...baseMethod,
+        id: newMethodId,
+        'method-id': newMethodId,
+        'namespace-account-method-id': newMethodId,
+        'namespace-account-method-name': `${method['namespace-account-method-name']} (Copy)`,
+        'namespace-id': namespaceId,
+        'sample-request': null,
+        'sample-response': null
+      };
+
+      delete methodData['method-id'];
+      await setDoc(doc(db, 'namespace-account-method', newMethodId), methodData);
       loadAccountsAndMethods(namespaceId);
     } catch (error) {
       console.error('Error duplicating method:', error);
@@ -261,344 +404,473 @@ export default function NamespaceManagement() {
     }
   };
 
-  const loadTemplates = async () => {
+  const showPrettyJson = (title: string, method: NamespaceMethod, type: 'request' | 'response') => {
+    const data = type === 'request' ? 
+      (method['sample-request'] || null) : 
+      (method['sample-response'] || null);
+    
+    const schema = data ? JsonSchemaService.generateSchema(data) : null;
+    
+    setJsonModalData({
+      title,
+      data: {
+        data,
+        schema,
+        methodId: method['method-id'],
+        namespaceId: method['namespace-id']
+      }
+    });
+    setEditedData(data ? JSON.stringify(data, null, 2) : '');
+    setEditedSchema(schema ? JSON.stringify(schema, null, 2) : '');
+    setSchemaTestData('');
+    setSchemaValidationErrors([]);
+    setShowJsonModal(true);
+  };
+
+  const copyToClipboard = async (text: string, key: string) => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'namespace-templates'));
-      const data = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as NamespaceTemplate[];
-      setTemplates(data);
-    } catch (error) {
-      console.error('Error loading templates:', error);
+      await navigator.clipboard.writeText(text);
+      setCopiedState(prev => ({ ...prev, [key]: true }));
+      setTimeout(() => {
+        setCopiedState(prev => ({ ...prev, [key]: false }));
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
     }
   };
 
-  const handleCreateTemplate = async (namespace: Namespace) => {
+  const handleApiCall = async (method: NamespaceMethod, requestData: any) => {
     try {
-      const templateId = uuidv4();
-      const namespaceAccounts = accounts[namespace.id] ?? [];
-      const namespaceMethods = methods[namespace.id] ?? [];
-
-      const template: NamespaceTemplate = {
-        id: templateId,
-        name: `${namespace['namespace-name']} Template`,
-        template: {
-          namespace: {
-            'namespace-name': namespace['namespace-name'] || '',
-            'namespace-url': namespace['namespace-url'] || '',
-            'namespace-id': namespace.id
-          },
-          accounts: namespaceAccounts.map(account => ({
-            'namespace-account-name': account['namespace-account-name'] || '',
-            'namespace-account-url-override': account['namespace-account-url-override'] || '',
-            'namespace-account-header': account['namespace-account-header'] || [],
-            'namespace-account-id': account.id,
-            'namespace-id': account['namespace-id']
-          })),
-          methods: namespaceMethods.map(method => ({
-            'namespace-account-method-name': method['namespace-account-method-name'] || '',
-            'namespace-account-method-type': method['namespace-account-method-type'] || HttpMethod.GET,
-            'namespace-account-method-url-override': method['namespace-account-method-url-override'] || '',
-            'namespace-account-method-queryParams': method['namespace-account-method-queryParams'] || [],
-            'namespace-account-method-id': method.id,
-            'namespace-id': method['namespace-id']
-          }))
-        }
+      // Make the API call
+      const response = await makeApiCall(method, requestData);
+      
+      // Generate schemas first
+      const requestSchema = JsonSchemaService.generateSchema(requestData);
+      const responseSchema = JsonSchemaService.generateSchema(response);
+      
+      // Update Firebase with complete method data
+      const methodRef = doc(db, 'namespace-account-method', method['method-id']);
+      const updateData = {
+        'method-id': method['method-id'],
+        'namespace-id': method['namespace-id'],
+        'sample-request': requestData,
+        'request-schema': requestSchema,
+        'sample-response': response,
+        'response-schema': responseSchema,
+        'last-updated': new Date().toISOString()
       };
 
-      await setDoc(doc(db, 'namespace-templates', templateId), template);
-      loadTemplates();
-      alert('Template created successfully!');
-    } catch (error) {
-      console.error('Error creating template:', error);
-      alert('Error creating template');
-    }
-  };
+      // Use setDoc instead of updateDoc to ensure complete document update
+      await setDoc(methodRef, updateData, { merge: true });
 
-  const handleApplyTemplate = async (
-    template: NamespaceTemplate,
-    mapping: {
-      namespaceId?: string;
-      accountMappings: Record<string, string>;
-      methodMappings: Record<string, string>;
-    }
-  ) => {
-    try {
-      let namespaceId = mapping.namespaceId;
-
-      // Create new namespace if needed
-      if (!namespaceId) {
-        namespaceId = uuidv4();
-        const namespace = {
-          id: namespaceId,
-          ...template.template.namespace
+      // Refresh UI
+      await loadAccountsAndMethods(method['namespace-id']);
+      
+      // Update modal if open
+      if (showJsonModal && jsonModalData?.data?.methodId === method['method-id']) {
+        const updatedMethod = {
+          ...method,
+          ...updateData
         };
-        await setDoc(doc(db, 'namespace', namespaceId), namespace);
+        showPrettyJson(
+          jsonModalData.title,
+          updatedMethod,
+          jsonModalData.title.toLowerCase().includes('response') ? 'response' : 'request'
+        );
       }
 
-      // Create or update accounts
-      for (const templateAccount of template.template.accounts) {
-        const existingAccountId = mapping.accountMappings[templateAccount['namespace-account-name']];
-        if (existingAccountId) {
-          await updateDoc(doc(db, 'namespace-account', existingAccountId), templateAccount);
-        } else {
-          const accountId = uuidv4();
-          await setDoc(doc(db, 'namespace-account', accountId), {
-            id: accountId,
-            ...templateAccount,
-            'namespace-id': namespaceId
-          });
-        }
-      }
-
-      // Create or update methods
-      for (const templateMethod of template.template.methods) {
-        const existingMethodId = mapping.methodMappings[templateMethod['namespace-account-method-name']];
-        if (existingMethodId) {
-          await updateDoc(doc(db, 'namespace-account-method', existingMethodId), templateMethod);
-        } else {
-          const methodId = uuidv4();
-          await setDoc(doc(db, 'namespace-account-method', methodId), {
-            id: methodId,
-            ...templateMethod,
-            'namespace-id': namespaceId
-          });
-        }
-      }
-
-      loadNamespaces();
+      return response;
     } catch (error) {
-      console.error('Error applying template:', error);
+      console.error('API call failed:', error);
+      throw error;
     }
-  };
-
-  const setShowMapping = (template: NamespaceTemplate) => {
-    setSelectedTemplate(template);
   };
 
   return (
     <div className="p-6">
-      <TabHeader 
-        tabs={['Namespaces', 'Templates']}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Namespace Management</h1>
+          <button
+            onClick={() => handleAddNamespace()}
+            className="px-4 py-2 bg-[#ff6b4a] text-white rounded flex items-center gap-2"
+          >
+            <FiPlus /> Add Namespace
+          </button>
+        </div>
 
-      {activeTab === 'Namespaces' ? (
-        // Namespaces View
-        <div>
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Namespace Management</h1>
-            <button
-              onClick={() => handleAddNamespace()}
-              className="px-4 py-2 bg-[#ff6b4a] text-white rounded flex items-center gap-2"
+        <div className="space-y-4">
+          {namespaces.map((namespace) => (
+            <ExpandableCard
+              key={namespace.id}
+              title={namespace['namespace-name']}
+              subtitle={namespace['namespace-url']}
+              isExpanded={expandedId === namespace.id}
+              onToggle={() => setExpandedId(expandedId === namespace.id ? null : namespace.id)}
+              onDelete={() => handleDeleteNamespace(namespace.id)}
+              onDuplicate={() => handleDuplicateNamespace(namespace)}
             >
-              <FiPlus /> Add Namespace
-            </button>
-          </div>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-medium mb-2">Namespace Details</h3>
+                  <EditableTable
+                    data={{
+                      ...namespace,
+                      'namespace-id': namespace.id
+                    }}
+                    onUpdate={(key, value) => handleUpdateNamespace(namespace.id, key, value)}
+                    excludeKeys={[]}
+                    readOnlyKeys={['id', 'namespace-id']}
+                  />
+                </div>
 
-          <div className="space-y-4">
-            {namespaces.map((namespace) => (
-              <ExpandableCard
-                key={namespace.id}
-                title={namespace['namespace-name']}
-                subtitle={namespace['namespace-url']}
-                isExpanded={expandedId === namespace.id}
-                onToggle={() => setExpandedId(expandedId === namespace.id ? null : namespace.id)}
-                onDelete={() => handleDeleteNamespace(namespace.id)}
-                onDuplicate={() => handleDuplicateNamespace(namespace)}
-                actions={
-                  <button
-                    onClick={() => handleCreateTemplate(namespace)}
-                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                  >
-                    <FiSave /> Create Template
-                  </button>
-                }
-              >
-                <div className="space-y-6">
-                  {/* Namespace Details */}
-                  <div>
-                    <h3 className="font-medium mb-2">Namespace Details</h3>
-                    <EditableTable
-                      data={{
-                        ...namespace,
-                        'namespace-id': namespace.id
-                      }}
-                      onUpdate={(key, value) => handleUpdateNamespace(namespace.id, key, value)}
-                      excludeKeys={[]}
-                      readOnlyKeys={['id', 'namespace-id']}
-                    />
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-medium">Accounts</h3>
+                    <button
+                      onClick={() => handleAddAccount(namespace.id)}
+                      className="text-sm text-[#ff6b4a] hover:text-[#ff5436] flex items-center gap-1"
+                    >
+                      <FiPlus /> Add Account
+                    </button>
                   </div>
-
-                  {/* Accounts Section */}
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="font-medium">Accounts</h3>
-                      <button
-                        onClick={() => handleAddAccount(namespace.id)}
-                        className="text-sm text-[#ff6b4a] hover:text-[#ff5436] flex items-center gap-1"
+                  <div className="space-y-2">
+                    {accounts[namespace.id]?.map((account) => (
+                      <ExpandableCard
+                        key={account.id}
+                        title={account['namespace-account-name']}
+                        subtitle={account['namespace-account-url-override']}
+                        isExpanded={expandedAccountId === account.id}
+                        onToggle={() => setExpandedAccountId(expandedAccountId === account.id ? null : account.id)}
+                        onDelete={() => handleDeleteAccount(account.id, namespace.id)}
+                        onDuplicate={() => handleDuplicateAccount(account, namespace.id)}
                       >
-                        <FiPlus /> Add Account
-                      </button>
-                    </div>
-                    <div className="space-y-2">
-                      {accounts[namespace.id]?.map((account) => (
-                        <ExpandableCard
-                          key={account.id}
-                          title={account['namespace-account-name']}
-                          subtitle={account['namespace-account-url-override']}
-                          isExpanded={expandedAccountId === account.id}
-                          onToggle={() => setExpandedAccountId(expandedAccountId === account.id ? null : account.id)}
-                          onDelete={() => handleDeleteAccount(account.id, namespace.id)}
-                          onDuplicate={() => handleDuplicateAccount(account, namespace.id)}
-                        >
+                        <div className="space-y-4">
                           <EditableTable
                             data={account}
                             onUpdate={(key, value) => handleUpdateAccount(account.id, namespace.id, key, value)}
                             excludeKeys={['id', 'namespace-account-header']}
                             readOnlyKeys={['namespace-id']}
                           />
-                          <KeyValueTable
-                            data={account['namespace-account-header']}
-                            onUpdate={(headers) => handleUpdateHeaders(account.id, namespace.id, headers)}
+                          <KeyValueEditor
+                            pairs={account['namespace-account-header'] || []}
+                            onChange={(newHeaders) => {
+                              loadAccountsAndMethods(namespace.id);
+                            }}
                             title="Headers"
-                            allowJsonValue={false}
+                            accountId={account.id}
+                            collectionName="namespace-account"
                           />
-                        </ExpandableCard>
-                      ))}
-                    </div>
+                        </div>
+                      </ExpandableCard>
+                    ))}
                   </div>
+                </div>
 
-                  {/* Methods Section */}
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="font-medium">Methods</h3>
-                      <button
-                        onClick={() => handleAddMethod(namespace.id)}
-                        className="text-sm text-[#ff6b4a] hover:text-[#ff5436] flex items-center gap-1"
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-medium">Methods</h3>
+                    <button
+                      onClick={() => handleAddMethod(namespace.id)}
+                      className="text-sm text-[#ff6b4a] hover:text-[#ff5436] flex items-center gap-1"
+                    >
+                      <FiPlus /> Add Method
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {methods[namespace.id]?.map((method) => (
+                      <ExpandableCard
+                        key={method['method-id']}
+                        title={method['namespace-account-method-name']}
+                        subtitle={method['namespace-account-method-url-override']}
+                        isExpanded={expandedMethodId === method['method-id']}
+                        onToggle={() => setExpandedMethodId(
+                          expandedMethodId === method['method-id'] ? null : (method['method-id'] || null)
+                        )}
+                        onDelete={() => method['method-id'] && handleDeleteMethod(method['method-id'], namespace.id)}
+                        onDuplicate={() => handleDuplicateMethod(method, namespace.id)}
                       >
-                        <FiPlus /> Add Method
-                      </button>
-                    </div>
-                    <div className="space-y-2">
-                      {methods[namespace.id]?.map((method) => (
-                        <ExpandableCard
-                          key={method.id}
-                          title={method['namespace-account-method-name']}
-                          subtitle={method['namespace-account-method-url-override']}
-                          isExpanded={expandedMethodId === method.id}
-                          onToggle={() => setExpandedMethodId(expandedMethodId === method.id ? null : method.id)}
-                          onDelete={() => handleDeleteMethod(method.id, namespace.id)}
-                          onDuplicate={() => handleDuplicateMethod(method, namespace.id)}
-                        >
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Sample Request</label>
+                            <div className="mt-1 flex items-center gap-2">
+                              <span className="text-gray-500 text-sm">[Sample Data Available]</span>
+                              <button
+                                onClick={() => showPrettyJson('Request Data & Schema', method, 'request')}
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                              >
+                                View JSON & Schema
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedTestMethod(method);
+                                  setShowApiTest(true);
+                                }}
+                                className="text-green-600 hover:text-green-800 text-sm ml-4"
+                              >
+                                Test API
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Sample Response</label>
+                            <div className="mt-1 flex items-center gap-2">
+                              <span className="text-gray-500 text-sm">[Sample Data Available]</span>
+                              <button
+                                onClick={() => showPrettyJson('Response Data & Schema', method, 'response')}
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                              >
+                                View JSON & Schema
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
                           <EditableTable
                             data={method}
-                            onUpdate={(key, value) => handleUpdateMethod(method.id, namespace.id, key, value)}
-                            excludeKeys={['id', 'namespace-account-method-queryParams']}
-                            readOnlyKeys={['namespace-id']}
+                            onUpdate={(key, value) => handleUpdateMethod(method['method-id'], namespace.id, key, value)}
+                            excludeKeys={['namespace-account-method-queryParams', 'namespace-account-method-header']}
+                            readOnlyKeys={['namespace-id', 'method-id']}
                             enumFields={{
                               'namespace-account-method-type': HttpMethod
                             }}
                           />
-                          <KeyValueTable
-                            data={method['namespace-account-method-queryParams']}
-                            onUpdate={(params) => handleUpdateQueryParams(method.id, namespace.id, params)}
+                          <KeyValueEditor
+                            pairs={method['namespace-account-method-queryParams'] || []}
+                            onChange={(newParams) => {
+                              loadAccountsAndMethods(namespace.id);
+                            }}
                             title="Query Parameters"
-                            allowJsonValue={false}
+                            methodId={method['method-id']}
+                            collectionName="namespace-account-method"
                           />
-                        </ExpandableCard>
+                          <KeyValueEditor
+                            pairs={method['namespace-account-method-header'] || []}
+                            onChange={(newHeaders) => {
+                              loadAccountsAndMethods(namespace.id);
+                            }}
+                            title="Headers"
+                            methodId={method['method-id']}
+                            collectionName="namespace-account-method"
+                          />
+                        </div>
+                      </ExpandableCard>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </ExpandableCard>
+          ))}
+        </div>
+      </div>
+
+      {showJsonModal && jsonModalData && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-[90vw] h-[90vh] flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50 shrink-0">
+              <h3 className="font-medium text-lg">{jsonModalData.title}</h3>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    const dataBlob = new Blob([editedData], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'data.json';
+                    a.click();
+                  }}
+                  className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                >
+                  <FiDownload /> Download JSON
+                </button>
+                <button
+                  onClick={() => {
+                    const schemaBlob = new Blob([editedSchema], { type: 'application/json' });
+                    const url = URL.createObjectURL(schemaBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'schema.json';
+                    a.click();
+                  }}
+                  className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                >
+                  <FiDownload /> Download Schema
+                </button>
+                <button
+                  onClick={() => setShowJsonModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col p-6 overflow-hidden h-full">
+              <div 
+                className="flex gap-6"
+                style={{ height: `${topSectionHeight}%` }}
+              >
+                <div className="flex-1 flex flex-col">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium">Sample Data</h4>
+                    <button
+                      onClick={() => copyToClipboard(JSON.stringify(jsonModalData.data.data, null, 2), 'data')}
+                      className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm"
+                    >
+                      {copiedState.data ? (
+                        <>
+                          <FiCheck className="text-green-500" /> Copied!
+                        </>
+                      ) : (
+                        <>
+                          <FiCopy /> Copy
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <pre className="flex-1 p-4 font-mono text-sm border rounded-lg bg-gray-50 overflow-auto whitespace-pre-wrap">
+                    {JSON.stringify(jsonModalData.data.data, null, 2)}
+                  </pre>
+                </div>
+
+                <div className="flex-1 flex flex-col">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium">JSON Schema</h4>
+                    <button
+                      onClick={() => copyToClipboard(JSON.stringify(jsonModalData.data.schema, null, 2), 'schema')}
+                      className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm"
+                    >
+                      {copiedState.schema ? (
+                        <>
+                          <FiCheck className="text-green-500" /> Copied!
+                        </>
+                      ) : (
+                        <>
+                          <FiCopy /> Copy
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <pre className="flex-1 p-4 font-mono text-sm border rounded-lg bg-gray-50 overflow-auto whitespace-pre-wrap">
+                    {JSON.stringify(jsonModalData.data.schema, null, 2)}
+                  </pre>
+                </div>
+              </div>
+
+              <div 
+                className="h-1 bg-gray-200 hover:bg-blue-500 cursor-ns-resize my-2"
+                onMouseDown={(e) => {
+                  const startY = e.clientY;
+                  const startHeight = topSectionHeight;
+                  
+                  const handleMouseMove = (moveEvent: MouseEvent) => {
+                    const delta = moveEvent.clientY - startY;
+                    const newHeight = Math.max(30, Math.min(60, startHeight + (delta / window.innerHeight) * 100));
+                    setTopSectionHeight(newHeight);
+                    setMiddleSectionHeight(Math.max(20, 80 - newHeight - 20));
+                  };
+                  
+                  const handleMouseUp = () => {
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                  };
+                  
+                  document.addEventListener('mousemove', handleMouseMove);
+                  document.addEventListener('mouseup', handleMouseUp);
+                }}
+              />
+
+              <div 
+                className="flex flex-col"
+                style={{ height: `${middleSectionHeight}%` }}
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-medium">Validate JSON</h4>
+                  <button
+                    onClick={() => copyToClipboard(schemaTestData, 'validate')}
+                    className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm"
+                  >
+                    {copiedState.validate ? (
+                      <>
+                        <FiCheck className="text-green-500" /> Copied!
+                      </>
+                    ) : (
+                      <>
+                        <FiCopy /> Copy
+                      </>
+                    )}
+                  </button>
+                </div>
+                <textarea
+                  value={schemaTestData}
+                  onChange={(e) => {
+                    setSchemaTestData(e.target.value);
+                    try {
+                      setSchemaValidationErrors(
+                        JsonSchemaService.validate(jsonModalData.data.schema, e.target.value)
+                      );
+                    } catch (e) {
+                      setSchemaValidationErrors(['Invalid JSON format']);
+                    }
+                  }}
+                  placeholder="Paste JSON to validate against schema..."
+                  className="flex-1 p-4 font-mono text-sm border rounded-lg bg-gray-50"
+                  spellCheck={false}
+                />
+              </div>
+
+              <div 
+                className="h-1 bg-gray-200 hover:bg-blue-500 cursor-ns-resize my-2"
+                onMouseDown={(e) => {
+                  const startY = e.clientY;
+                  const startHeight = middleSectionHeight;
+                  
+                  const handleMouseMove = (moveEvent: MouseEvent) => {
+                    const delta = moveEvent.clientY - startY;
+                    const newHeight = Math.max(20, Math.min(40, startHeight + (delta / window.innerHeight) * 100));
+                    setMiddleSectionHeight(newHeight);
+                  };
+                  
+                  const handleMouseUp = () => {
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                  };
+                  
+                  document.addEventListener('mousemove', handleMouseMove);
+                  document.addEventListener('mouseup', handleMouseUp);
+                }}
+              />
+
+              <div className="flex-1 min-h-[15%] flex flex-col">
+                <h4 className="font-medium mb-2">Validation Results</h4>
+                <div className="flex-1 border rounded-lg bg-gray-50 p-4 overflow-y-auto">
+                  {schemaValidationErrors.length > 0 ? (
+                    <div className="text-red-600">
+                      {schemaValidationErrors.map((error, i) => (
+                        <div key={i} className="flex items-start gap-2 mb-1">
+                          <span className="text-red-500">•</span>
+                          <span>{error}</span>
+                        </div>
                       ))}
                     </div>
-                  </div>
+                  ) : (
+                    <div className="text-green-600">JSON is valid</div>
+                  )}
                 </div>
-              </ExpandableCard>
-            ))}
-          </div>
-        </div>
-      ) : (
-        // Templates View
-        <div>
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Template Management</h1>
-          </div>
-
-          <div className="space-y-4">
-            {templates.map((template) => (
-              <ExpandableCard
-                key={template.id}
-                title={template.name}
-                subtitle={template.template.namespace['namespace-url']}
-                isExpanded={expandedTemplateId === template.id}
-                onToggle={() => setExpandedTemplateId(expandedTemplateId === template.id ? null : template.id)}
-                onApply={async () => setShowMapping(template)}
-              >
-                <div className="space-y-4">
-                  {/* Namespace Section */}
-                  <div>
-                    <h3 className="font-medium mb-2">Namespace</h3>
-                    <EditableTable
-                      data={template.template.namespace}
-                      onUpdate={async () => {}}
-                      readOnly={true}
-                    />
-                  </div>
-
-                  {/* Accounts Section */}
-                  <div>
-                    <h3 className="font-medium mb-2">Accounts</h3>
-                    {template.template.accounts.map((account, index) => (
-                      <div key={index} className="mb-4">
-                        <EditableTable
-                          data={account}
-                          onUpdate={async () => {}}
-                          readOnly={true}
-                        />
-                        <KeyValueTable
-                          data={account['namespace-account-header']}
-                          onUpdate={async () => {}}
-                          title="Headers"
-                          readOnly={true}
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Methods Section */}
-                  <div>
-                    <h3 className="font-medium mb-2">Methods</h3>
-                    {template.template.methods.map((method, index) => (
-                      <div key={index} className="mb-4">
-                        <EditableTable
-                          data={method}
-                          onUpdate={async () => {}}
-                          readOnly={true}
-                        />
-                        <KeyValueTable
-                          data={method['namespace-account-method-queryParams']}
-                          onUpdate={async () => {}}
-                          title="Query Parameters"
-                          readOnly={true}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </ExpandableCard>
-            ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Add Template Mapping Modal */}
-      {selectedTemplate && (
-        <TemplateMapping
-          template={selectedTemplate}
-          existingNamespaces={namespaces}
-          existingAccounts={Object.values(accounts).flat()}
-          existingMethods={Object.values(methods).flat()}
-          onMapComplete={handleApplyTemplate}
+      {showApiTest && selectedTestMethod && (
+        <ApiTestDialog
+          isOpen={showApiTest}
+          onClose={() => setShowApiTest(false)}
+          method={selectedTestMethod}
+          namespace={namespaces.find(n => n.id === selectedTestMethod['namespace-id'])!}
+          accounts={accounts[selectedTestMethod['namespace-id']] || []}
+          initialAccount={accounts[selectedTestMethod['namespace-id']]?.[0]}
         />
       )}
     </div>
